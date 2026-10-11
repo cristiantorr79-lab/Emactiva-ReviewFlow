@@ -55,3 +55,19 @@ Criterios de aceptación de serialización, reentrega y conciliación definidos 
 | Sin implementar RF-01/RF-02 | PASS por inspección de los cinco artefactos revisados; no hay implementación en ellos |
 
 **Decisión de gate:** NO CERRAR aún. El primer pendiente real es completar la revisión documental final de consistencia y obtener evidencia suficiente para el gate aplicable. La serialización n8n, WhatsApp real y Sheets siguen NOT_VERIFIED y corresponden al LAB de implementación; no deben convertirse en bloqueos artificiales de pruebas funcionales en LAB-000.
+
+## Evidencia focalizada de consistencia documental — 2026-10-11
+Lectura directa de cinco archivos del repositorio y 11 verificaciones automáticas de presencia y coherencia básica: **11/11 PASS**. Comprobaciones: cinco documentos, RF-02 receptor sin envíos, RF-01 emisor único, ventana LISTO por `received_at`, relectura bloqueante, duplicados/ambigüedad, inventario EPB PRIV-00, separación EDPB, casos EQAB, HANDOFF y advertencia sin exactamente una vez.
+
+SHAs de contenido inspeccionados:
+- README.md: `b487c94938dbf59a4ad46cc2db870ccd767f71ec`
+- ARCHITECTURE.md: `3dfeb8976d819d813ec8f73062b8bb4991d2ddd5`
+- CONTRACTS.md: `63f136b17b303838578b581e7be9326c675b39f4`
+- PRIVACY_AND_QA.md: `51fdedfb5578a467eff2fa72adda59a956a7db44`
+- HANDOFF_LAB-RF-000.md (previo a registrar esta evidencia): `c28a169cd34a126651f8be75c9a25f2d8bed03e8`
+
+Alcance de esta evidencia: inspección documental automatizada, no revisión semántica independiente ni pruebas funcionales. El propio HANDOFF cambia al añadir este registro, por lo que el SHA indicado es la versión de entrada.
+
+**EWB — excepción de flujo Git:** los archivos se crearon y modificaron directamente en `main` mediante la API GitHub, sin rama/PR. Esto no satisface una revisión formal por PR; queda **WARN** procedimental para decisión de cierre, sin recrear artificialmente una PR ya pasada. `git diff --check` no se ejecutó: **NOT_VERIFIED**; la escritura por API no genera un árbol local para ese comando.
+
+**Gate actualizado:** 11/11 verificaciones documentales focalizadas PASS. Permanecen WARN de proceso (ausencia de PR/revisión independiente) y NOT_VERIFIED operacionales (serialización n8n, entrega WhatsApp, Sheets, retención y entorno). No afirmar PASS funcional ni cerrar Ticket #1 sin resolver el requisito de revisión/cierre aplicable.
