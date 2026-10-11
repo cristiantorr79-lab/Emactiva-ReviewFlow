@@ -17,14 +17,11 @@ Estado: DEFINICIÓN DOCUMENTAL; sin implementación.
 - Un único recordatorio si no existe confirmación LISTO. La respuesta LISTO confirma declaración del cliente, no reseña publicada.
 
 ## Estados y operaciones
-pending -> request_in_progress -> request_sent -> reminder_in_progress -> completed.
-request_sent -> confirmed -> thanks_in_progress -> completed.
-Estados de operación ambiguos se retienen para conciliación, sin reenvío ciego.
-La confirmación y el agradecimiento se registran separadamente; completed significa cierre del seguimiento, no reseña comprobada.
+Separar estado de seguimiento (`status`: pending, request_sent, confirmed, reminder_sent, completed) de fase de operación (`operation_phase`: idle, request_prepared, request_ambiguous, reminder_prepared, reminder_ambiguous, thanks_prepared, thanks_ambiguous, needs_reconciliation). Registrar `completion_reason` al cerrar: `reminder_finished` o `confirmed_thanked`, sin inferir publicación de reseña. La confirmación persiste aunque falle el agradecimiento. No se reintentan operaciones ambiguas a ciegas. Confirmaciones tardías tras recordatorio o cierre: política pendiente, NOT_VERIFIED.
 
 ## Concurrencia, idempotencia y fallo parcial
 Google Sheets no proporciona reclamación transaccional ni UNIQUE. No declarar exactamente una vez.
-Mitigación prevista: un único procesador secuencial, sin ejecuciones solapadas; releer estado antes de cada efecto externo; checkpoint previo a envío; operación con resultado desconocido pasa a revisión, nunca reintento ciego.
+Mitigación prevista: serializar todas las operaciones conflictivas de RF-01 y RF-02, no solamente ejecuciones RF-01; checkpoint antes de efectos externos; operación desconocida pasa a conciliación, nunca reintento ciego. Releer Sheets no es exclusión atómica. Mecanismo concreto de exclusión: pendiente de decisión y prueba.
 El control real de concurrencia en versión/despliegue n8n es NOT_VERIFIED y bloquea la afirmación de garantía anti-duplicados.
 Si se recibe LISTO cerca del recordatorio, la exclusión entre RF-01 y RF-02 requiere diseño y prueba específica; relectura sola no equivale a exclusión atómica.
 Una interrupción después de aceptar WhatsApp y antes de guardar resultado se clasifica como resultado ambiguo y exige conciliación manual o mecanismo de proveedor demostrado.
