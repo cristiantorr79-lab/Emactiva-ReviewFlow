@@ -14,16 +14,17 @@ Son datos mínimos propuestos, sujetos a minimización EPB y revisión de necesi
 
 ## RF-01
 Entrada: fila de atención con service_id único, teléfono válido, fecha de atención, enlace Google y autorización/condición de contacto verificada según canal y jurisdicción.
+RF-01 es el único escritor de estados de seguimiento y único emisor WhatsApp; procesa primero eventos pendientes de bandeja. Debe ejecutarse sin solapamiento demostrado.
 Elegibilidad de solicitud: pending, request_sent=false, ahora >= appointment_at + 2h, horario permitido, sin operación ambigua.
 Efecto: preparar checkpoint, llamar WhatsApp oficial con plantilla aprobada cuando aplique, persistir resultado confirmado; si incierto, bloquear reenvío y conciliar.
 Elegibilidad de recordatorio: solicitud confirmada, ahora >= request_sent_at + 12h, sin confirmación, reminder_sent=false, horario permitido, sin operación ambigua. Revalidar inmediatamente antes del efecto externo.
 Cierre: registrar completed_at y completion_reason; tras recordatorio `reminder_finished` no significa confirmación. Política de LISTO tardío: pendiente de decisión.
 
 ## RF-02
-Entrada: webhook autenticado y validado; extraer solo teléfono remitente, texto estrictamente necesario y metadatos mínimos para correlación.
+Entrada: webhook autenticado y validado; extraer solo ID de evento, teléfono remitente, indicación de LISTO y fecha de recepción. Persistir estos metadatos mínimos en pestaña `inbox_events` separada de la atención; no persistir texto libre ni payload crudo.
 Normalización: recortar espacios externos y comparar texto completo sin distinguir mayúsculas/minúsculas con LISTO; no aceptar coincidencias parciales.
-Localización: por teléfono normalizado y seguimiento activo; si hay múltiples atenciones elegibles, no asignar arbitrariamente: evento ambiguo para conciliación sin registrar conversación completa.
-Acción: persistir confirmación una vez, enviar agradecimiento una sola vez cuando esté permitido y registrar su resultado. Duplicados no deben producir nuevo agradecimiento.
+Localización: la realiza RF-01 al consumir la bandeja, por teléfono normalizado y seguimiento inequívoco; si hay múltiples atenciones elegibles, no asignar arbitrariamente: evento ambiguo para conciliación sin registrar conversación completa.
+Acción: escribir evento mínimo LISTO en bandeja de entrada persistente y confirmar webhook solo tras persistencia. RF-02 no agradece ni actualiza la fila de seguimiento. RF-01 consume eventos, deduplica por ID de proveedor, correlaciona, persiste confirmación y luego envía agradecimiento; duplicados no deben producir nuevo agradecimiento. La reentrega del webhook requiere prueba con proveedor.
 No crear contactos automáticamente desde webhook. No almacenar payload ni conversación completos.
 
 ## Errores canónicos propuestos
@@ -31,4 +32,4 @@ INVALID_PHONE, INVALID_DATE, INVALID_REVIEW_LINK, INVALID_WEBHOOK_EVENT, CUSTOME
 Los errores no contienen teléfonos, nombres, mensajes ni secretos.
 
 ## Pendientes que no deben ocultarse
-Proveedor/plantillas/opt-in y ventanas WhatsApp, política de horario, retención, exclusión entre RF-01 y RF-02, LISTO tardío, soporte de serialización en n8n y capacidad real de conciliación: NOT_VERIFIED. Se verifican antes de piloto; no son PASS de implementación.
+Proveedor/plantillas/opt-in y ventanas WhatsApp, política de horario, retención, exclusión entre RF-01 y RF-02, LISTO tardío, soporte de serialización en n8n, persistencia/reentrega de webhook y capacidad real de conciliación: NOT_VERIFIED. Se verifican antes de piloto; no son PASS de implementación.
