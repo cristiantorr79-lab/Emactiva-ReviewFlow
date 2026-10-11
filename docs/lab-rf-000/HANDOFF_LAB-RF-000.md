@@ -28,5 +28,13 @@ README.md; docs/lab-rf-000/ARCHITECTURE.md; CONTRACTS.md; PRIVACY_AND_QA.md; est
 - Decisión aprobada: LISTO tardío se acepta hasta 7 días desde `request_sent_at`, incluso tras recordatorio, con correlación inequívoca; fuera de ventana no hay reapertura ni agradecimiento automático. Plazo configurable.
 - Pendiente ENVIRONMENT: plantilla aprobada, condiciones de contacto, webhooks, permisos, retención, zona horaria y proveedor.
 
+## Revisión focalizada de baselines (2026-10-11)
+- **EWB:** Issue #1 tiene objetivo, alcance y criterios; HANDOFF único y trazabilidad documental. Revisión/PR y cierre final: NOT_VERIFIED; cambios realizados por API GitHub, sin PR formal.
+- **EPB:** inventario PRIV-00 y ruta de eliminación PRIV-ARCH incorporados a PRIVACY_AND_QA.md. Países de tratamiento, responsabilidades contractuales, retención aprobada y eliminación efectiva: NOT_VERIFIED/pendientes de entorno. La ventana LISTO de 7 días no equivale a retención.
+- **EDPB:** separación SYSTEM/HYBRID/ENVIRONMENT documentada. Configuración y secretos externos definidos; restore, permisos, webhooks y pruebas de portabilidad reales: NOT_VERIFIED.
+- **EQAB:** matriz de escenarios y criterios de aceptación documentados; pruebas de integración y evidencia de ejecución: NOT_VERIFIED, reservadas al LAB de implementación. No declarar PASS funcional.
+- **Primer hallazgo:** faltaba inventario explícito EPB LAB-000. Corregido documentalmente; requiere revisión final de suficiencia.
+- **Alcance respetado:** sin implementación de RF-01/RF-02; sin datos reales ni credenciales; sin suites repetidas.
+
 ## Siguiente gate
 Criterios de aceptación de serialización, reentrega y conciliación definidos documentalmente para LAB de implementación. Pendiente revisión integral contra Issue #1 y baselines; no confundir diseño aprobado con controles operativos demostrados. No cerrar ni declarar PASS sin evidencia suficiente. La implementación RF-01/RF-02 se hará en LAB posterior.
