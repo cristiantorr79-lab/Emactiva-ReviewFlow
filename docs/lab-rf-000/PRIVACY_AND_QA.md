@@ -10,6 +10,32 @@ Retención: antes de piloto, registrar para cada campo finalidad, plazo aprobado
 Derechos de titulares: procedimiento de búsqueda, acceso, rectificación, eliminación y restricciones, sujeto a base legal y responsabilidades. Evidencia sanitizada.
 Secretos fuera de Git; logs técnicos sin PII ni tokens.
 
+## EPB — inventario inicial PRIV-00 y arquitectura PRIV-ARCH
+**Finalidad:** solicitar una reseña tras una atención, registrar la respuesta voluntaria LISTO, gestionar un único recordatorio y agradecer. No usar datos para marketing distinto.
+
+| Elemento | Inventario LAB-RF-000 | Estado |
+| --- | --- | --- |
+| Titulares | Clientes/personas que recibieron una atención; datos del contacto comercial si corresponde | IDENTIFICADO |
+| Categorías de datos | ID de atención, nombre si es necesario, teléfono, fecha de atención, enlace de reseña, estados, tiempos y metadatos mínimos de evento | IDENTIFICADO |
+| Datos sensibles | No se requieren ni deben capturarse intencionalmente | DISEÑO |
+| Menores | No se orienta a menores; manejo de registros incidentales y restricciones por cliente/jurisdicción por definir | NOT_VERIFIED |
+| Fuentes | Registro de atención proporcionado por negocio en Sheets; webhook de respuesta WhatsApp | IDENTIFICADO |
+| Rol probable Emactiva | Proveedor/implementador, potencial encargado según contrato y operación real; negocio como responsable probable | PENDIENTE CONTRATO |
+| Terceros | Google Sheets/Google, WhatsApp Business oficial/Meta o BSP, alojamiento n8n | IDENTIFICADO |
+| Países de procesamiento | Dependen de proveedores, región y acuerdos efectivos; no presumir ubicación | NOT_VERIFIED |
+| Jurisdicciones | Núcleo internacional; perfil local según país del negocio y destinatarios | PENDIENTE PILOTO |
+| Necesidad de campos | Teléfono y fecha para envío; ID para correlación; estados/tiempos para control; nombre y enlace deben justificarse por implementación | REVISIÓN PARCIAL |
+| Retención preliminar | 7 días es ventana de aceptación de LISTO, **no** plazo de conservación; matriz de retención y eliminación pendiente | NOT_VERIFIED |
+| IA | No se utiliza | N/A |
+| Decisiones automatizadas | Elegibilidad de envío, recordatorio y agradecimiento; no decisiones con efectos jurídicos previstos | IDENTIFICADO |
+| Riesgo inicial | Mensajería no autorizada, duplicados, correlación equivocada, exposición de teléfono, retención excesiva, accesos indebidos y fallos de eliminación | IDENTIFICADO |
+
+**Flujo de datos:** negocio → Sheets (atenciones) → RF-01 n8n → WhatsApp oficial → cliente; cliente → WhatsApp webhook → RF-02 → pestaña `inbox_events` de Sheets → RF-01 → actualización del seguimiento y agradecimiento cuando proceda. Acceso limitado por roles, secretos fuera de Git, logs sin datos personales y configuración externa.
+
+**Ruta de eliminación PRIV-ARCH:** localizar por `service_id` y, cuando sea necesario para derechos, por teléfono normalizado; localizar también eventos vinculados y respaldos bajo política aprobada. Borrar o anonimizar datos de seguimiento y bandeja según plazos y excepciones aplicables; registrar evidencia sanitizada. Esta ruta es de diseño y debe demostrarse con datos sintéticos en implementación.
+
+**Condición de gate:** el inventario inicial queda documentado; proveedores, países, base jurídica/condición de contacto, roles contractuales, retención y eliminación efectiva siguen sujetos a verificación antes del piloto. No convertir esta identificación en PASS de cumplimiento legal u operacional.
+
 ## EDPB — fronteras
 SYSTEM: reglas de elegibilidad, normalización LISTO, transiciones, validación.
 HYBRID: mapeo Sheets, integración WhatsApp, webhooks y operaciones de borrado.
