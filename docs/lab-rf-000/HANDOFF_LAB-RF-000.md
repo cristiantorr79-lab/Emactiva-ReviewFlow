@@ -25,7 +25,7 @@ README.md; docs/lab-rf-000/ARCHITECTURE.md; CONTRACTS.md; PRIVACY_AND_QA.md; est
 - Validación funcional n8n/Sheets/WhatsApp: NOT_VERIFIED (fuera de alcance de este LAB).
 - git diff --check: NOT_VERIFIED; repositorio gestionado por API de GitHub, sin working tree local en esta ejecución.
 - Riesgo abierto: serialización real de RF-01, reentrega del webhook y conciliación de operaciones ambiguas sin transacción Sheets.
-- Decisión aprobada: LISTO tardío se acepta hasta 7 días desde `request_sent_at`, incluso tras recordatorio, con correlación inequívoca; fuera de ventana no hay reapertura ni agradecimiento automático. Plazo configurable.
+- Decisión aprobada: LISTO tardío se acepta hasta 7 días desde `request_sent_at`, evaluando `received_at` confiable (no hora de procesamiento), con límite inclusivo, incluso tras recordatorio, con correlación inequívoca; fuera de ventana no hay reapertura ni agradecimiento automático. Plazo configurable.
 - Pendiente ENVIRONMENT: plantilla aprobada, condiciones de contacto, webhooks, permisos, retención, zona horaria y proveedor.
 
 ## Revisión focalizada de baselines (2026-10-11)
