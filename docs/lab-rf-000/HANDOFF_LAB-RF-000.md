@@ -71,3 +71,6 @@ Alcance de esta evidencia: inspección documental automatizada, no revisión sem
 **EWB — excepción de flujo Git:** los archivos se crearon y modificaron directamente en `main` mediante la API GitHub, sin rama/PR. Esto no satisface una revisión formal por PR; queda **WARN** procedimental para decisión de cierre, sin recrear artificialmente una PR ya pasada. `git diff --check` no se ejecutó: **NOT_VERIFIED**; la escritura por API no genera un árbol local para ese comando.
 
 **Gate actualizado:** 11/11 verificaciones documentales focalizadas PASS. Permanecen WARN de proceso (ausencia de PR/revisión independiente) y NOT_VERIFIED operacionales (serialización n8n, entrega WhatsApp, Sheets, retención y entorno). No afirmar PASS funcional ni cerrar Ticket #1 sin resolver el requisito de revisión/cierre aplicable.
+
+## Dictamen de cierre documental
+Revisión de cinco archivos y 11 controles documentales: PASS focalizado. Queda WARN de proceso: cambios directos a main sin PR ni revisión formal. No se debe registrar revisión inexistente. Ticket #1 sigue abierto a la espera de decidir la excepción EWB o realizar revisión humana. Pruebas de integración: NOT_VERIFIED, fuera de LAB-000.
