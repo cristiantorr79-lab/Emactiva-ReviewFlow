@@ -21,7 +21,7 @@ README.md; docs/lab-rf-000/ARCHITECTURE.md; CONTRACTS.md; PRIVACY_AND_QA.md; est
 
 ## Evidencia y estado
 - Materialización: PASS de existencia; los cinco archivos fueron leídos desde GitHub el 2026-10-11. Revisión posterior a ajustes pendiente.
-- Revisión arquitectónica documental: ambigüedad de completed corregida; matriz de 9 escenarios de fallos documentada en ARCHITECTURE.md y criterios verificables incorporados a CONTRACTS.md y PRIVACY_AND_QA.md. PASS de existencia documental; revisión integral de cierre todavía NOT_VERIFIED.
+- Revisión arquitectónica documental: se precisó transición de cierre por recordatorio a confirmación tardía sin borrar el historial; matriz de 9 escenarios de fallos documentada en ARCHITECTURE.md y criterios verificables incorporados a CONTRACTS.md y PRIVACY_AND_QA.md. PASS de existencia documental; revisión integral de cierre todavía NOT_VERIFIED.
 - Validación funcional n8n/Sheets/WhatsApp: NOT_VERIFIED (fuera de alcance de este LAB).
 - git diff --check: NOT_VERIFIED; repositorio gestionado por API de GitHub, sin working tree local en esta ejecución.
 - Riesgo abierto: serialización real de RF-01, reentrega del webhook y conciliación de operaciones ambiguas sin transacción Sheets.
