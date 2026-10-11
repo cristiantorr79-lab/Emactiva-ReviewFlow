@@ -2,7 +2,7 @@
 
 Automatización para solicitar y hacer seguimiento de reseñas de clientes de pequeñas empresas mediante n8n, Google Sheets y WhatsApp Business oficial.
 
-**Estado:** LAB-RF-000 en definición; no implementado ni habilitado comercialmente.
+**Estado:** LAB-RF-000 cerrado documentalmente (PASS con WARN EWB excepcional aprobado); ReviewFlow v0.1 no implementado ni habilitado comercialmente.
 
 ## Alcance v0.1
 
@@ -21,4 +21,4 @@ Aplicar EWB, EPB, EDPB y EQAB. Reutilizar aprendizajes de LeadFlow de forma prop
 
 **Advertencia:** Google Sheets no ofrece por sí solo reclamación atómica de envíos; las carreras y los resultados ambiguos de WhatsApp requieren controles y validación posterior. No se declara garantía de exactamente una vez.
 
-Los documentos de LAB-RF-000 ya están materializados en `docs/lab-rf-000/`; su validación de cierre continúa en curso. Este README no acredita PASS funcional.
+Los documentos de LAB-RF-000 y su evidencia de cierre están en `docs/lab-rf-000/`. Este cierre documental no acredita PASS funcional.
