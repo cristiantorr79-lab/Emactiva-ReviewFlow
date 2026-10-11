@@ -36,13 +36,16 @@ README.md; docs/lab-rf-000/ARCHITECTURE.md; CONTRACTS.md; PRIVACY_AND_QA.md; est
 - **Primer hallazgo:** faltaba inventario explícito EPB LAB-000. Corregido documentalmente; requiere revisión final de suficiencia.
 - **Alcance respetado:** sin implementación de RF-01/RF-02; sin datos reales ni credenciales; sin suites repetidas.
 
+## Regla de prioridad de bandeja
+RF-01 procesa primero eventos visibles, y antes de cada recordatorio relee atención y bandeja. Si la relectura falla, bloquea el recordatorio. La ventana entre última lectura y mensaje en vuelo queda como límite conocido y prueba pendiente.
+
 ## Siguiente gate
 Criterios de aceptación de serialización, reentrega y conciliación definidos documentalmente para LAB de implementación. Pendiente revisión integral contra Issue #1 y baselines; no confundir diseño aprobado con controles operativos demostrados. No cerrar ni declarar PASS sin evidencia suficiente. La implementación RF-01/RF-02 se hará en LAB posterior.
 
 ## Gate documental — evaluación contra Ticket #1 (2026-10-11)
 | Criterio Issue #1 | Resultado y evidencia |
 | --- | --- |
-| Decisiones consolidadas sin contradicciones | WARN: se corrigió hora de recepción de LISTO y transición de cierre; falta resolver política exacta de corte de bandeja y validación independiente |
+| Decisiones consolidadas sin contradicciones | WARN: se corrigió hora de recepción de LISTO y transición de cierre; política de corte de bandeja documentada; falta revisión final independiente |
 | Contratos funcionales y de datos | PASS documental: CONTRACTS.md define campos, estados, eventos, límites temporales y fallos |
 | EWB/EPB/EDPB/EQAB revisados | PASS de revisión focalizada: se registraron controles de diseño y pendientes de entorno, no cumplimiento operativo |
 | Estructura inicial materializada | PASS: README y cuatro documentos LAB-RF-000 en GitHub |
