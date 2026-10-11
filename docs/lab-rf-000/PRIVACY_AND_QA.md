@@ -20,12 +20,16 @@ Cambia el entorno, no el sistema.
 - Solicitud a +2h; no envío anticipado; horario permitido.
 - Confirmación LISTO exacta y normalizada; no aceptación de coincidencias parciales.
 - Recordatorio único a +12h sin confirmación; ningún recordatorio tras LISTO.
-- Reejecución y eventos duplicados sin nuevos envíos.
+- Reejecución, mismo ID de evento reentregado y dos eventos LISTO distintos sin nuevos agradecimientos.
 - Simultaneidad RF-01/RF-02 y dos corridas RF-01.
 - Timeout de WhatsApp con resultado ambiguo y sin reintento ciego.
 - Falla de escritura Sheets antes/después del envío y recuperación.
 - Agradecimiento fallido, recuperación y no duplicación.
 - Múltiples atenciones del mismo teléfono, entrada inválida y webhook no autenticado.
+- LISTO después del recordatorio pero dentro de 7 días; LISTO fuera de plazo; cierre de recordatorio seguido de confirmación y fallo de agradecimiento.
+- RF-02: escritura confirmada antes de responder éxito; fallo al responder y reentrega del proveedor; fallo al persistir y no pérdida silenciosa del evento.
+- RF-01: comprobar en despliegue real que dos ejecuciones no se solapan; si no se demuestra, no habilitar envíos automáticos.
+- Verificar que el proveedor permita conciliación segura de mensajes con resultado incierto; en caso contrario, bloqueo y revisión manual sin reenvío ciego.
 - Reinicio de n8n, persistencia, logs sanitizados, derechos de titulares, retención y cleanup de datos sintéticos.
 - Cambio de entorno/configuración sin cambio de lógica y revisión de secretos.
 
