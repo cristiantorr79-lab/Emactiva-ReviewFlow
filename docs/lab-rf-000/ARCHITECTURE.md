@@ -17,7 +17,7 @@ Estado: DEFINICIÓN DOCUMENTAL; sin implementación.
 - Un único recordatorio si no existe confirmación LISTO. La respuesta LISTO confirma declaración del cliente, no reseña publicada.
 
 ## Estados y operaciones
-Separar estado de seguimiento (`status`: pending, request_sent, confirmed, reminder_sent, completed) de fase de operación (`operation_phase`: idle, request_prepared, request_ambiguous, reminder_prepared, reminder_ambiguous, thanks_prepared, thanks_ambiguous, needs_reconciliation). Registrar `completion_reason` al cerrar: `reminder_finished` o `confirmed_thanked`, sin inferir publicación de reseña. La confirmación persiste aunque falle el agradecimiento. No se reintentan operaciones ambiguas a ciegas. Confirmaciones tardías tras recordatorio o cierre: política pendiente, NOT_VERIFIED.
+Separar estado de seguimiento (`status`: pending, request_sent, confirmed, reminder_sent, completed) de fase de operación (`operation_phase`: idle, request_prepared, request_ambiguous, reminder_prepared, reminder_ambiguous, thanks_prepared, thanks_ambiguous, needs_reconciliation). Registrar `completion_reason` al cerrar: `reminder_finished` o `confirmed_thanked`, sin inferir publicación de reseña. La confirmación persiste aunque falle el agradecimiento. No se reintentan operaciones ambiguas a ciegas. Confirmaciones tardías: ventana aprobada de 7 días desde `request_sent_at`, con correlación inequívoca; la prueba funcional sigue NOT_VERIFIED.
 
 ## Diseño propuesto: único responsable de efectos externos
 RF-02 valida el webhook y agrega un evento mínimo a una pestaña `inbox_events` de Sheets (identificador del evento de proveedor, teléfono normalizado, tipo LISTO, fecha de recepción y estado de procesamiento). Debe responder éxito solo tras escritura confirmada; si falla, respuesta de error para permitir reentrega según proveedor. La deduplicación por identificador de evento se realiza en RF-01, sin presumir unicidad atómica en Sheets.
@@ -40,3 +40,32 @@ No implementar RF-01/RF-02 en LAB-RF-000. Sin CRM, POS, reservas, panel, IA, NFC
 
 ## Lección LeadFlow
 Reutilizar metodología, contratos, tratamiento de resultados ambiguos y QA; no copiar PostgreSQL ni sus garantías a Sheets.
+
+## Validación de diseño: bandeja y emisor único (LAB-RF-000)
+
+**Resultado:** revisión lógica documental realizada; no es prueba de ejecución n8n/Sheets/WhatsApp.
+
+### Propiedad y secuencia
+1. RF-02 verifica autenticidad del webhook, reconoce LISTO, reduce datos al mínimo y añade evento a `inbox_events` con `provider_event_id`, `phone_e164`, `received_at`, `event_type` y `processing_status`. Solo confirma recepción tras escritura confirmada. Si la respuesta al proveedor es ambigua, una reentrega puede crear dos filas: RF-01 debe reconocer ambos eventos como equivalentes.
+2. RF-01, en ejecución no solapada, procesa primero la bandeja; deduplica por `provider_event_id`, comprueba ventana de 7 días y correlación inequívoca con `service_id`, persiste confirmación antes de agradecer y solo después considera solicitudes/recordatorios.
+3. Cada operación saliente utiliza una referencia estable de operación y checkpoint previo. Una aceptación de WhatsApp sin persistencia final produce resultado ambiguo; nunca reenvío automático ciego.
+4. Los eventos de bandeja no se eliminan antes de confirmar su procesamiento. Un fallo de actualización mantiene evento pendiente o exige conciliación, evitando pérdida silenciosa.
+
+### Matriz de fallos de diseño
+| Escenario | Conducta esperada | Estado |
+| --- | --- | --- |
+| Dos ejecuciones RF-01 se solapan | Debe existir límite real de concurrencia; no basta una bandera en Sheets | NOT_VERIFIED |
+| RF-02 escribe evento y falla al responder HTTP | Posible reentrega; RF-01 deduplica por ID de proveedor | DISEÑO |
+| RF-02 no consigue persistir | No confirmar éxito; revisar política real de reentrega del proveedor | NOT_VERIFIED |
+| LISTO llega durante recordatorio en vuelo | Registrar confirmación; no prometer cancelar envío ya iniciado | LÍMITE DOCUMENTADO |
+| Múltiples atenciones con el mismo teléfono | No asignar automáticamente; marcar conciliación | DISEÑO |
+| RF-01 se interrumpe tras envío aceptado | Mantener fase ambigua y bloquear reenvío ciego | DISEÑO |
+| RF-01 falla después de confirmar LISTO pero antes de agradecer | Mantener confirmación y recuperar agradecimiento sin duplicar | DISEÑO |
+| LISTO llega después de 7 días | No reabrir ni agradecer automáticamente; conservar solo resultado técnico mínimo según retención | DECISIÓN |
+| Proveedor reentrega mismo ID de evento | No repetir confirmación ni agradecimiento | DISEÑO |
+
+### Gate para LAB de implementación
+Verificar en versión y entorno reales: límite de ejecuciones RF-01, comportamiento del webhook oficial y su reentrega, escrituras de Sheets ante errores y concurrencia, persistencia de checkpoints, tratamiento de resultados ambiguos y cleanup. Hasta entonces: sin garantía exactamente una vez.
+
+### Hallazgo abierto de diseño
+El procesamiento por lotes debe fijar el corte temporal de lectura de bandeja y la política de prioridad de confirmaciones. No existe cancelación instantánea de un mensaje ya enviado. La seguridad frente a duplicados depende también de la capacidad del proveedor de conciliar operaciones salientes.
