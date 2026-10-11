@@ -38,3 +38,17 @@ README.md; docs/lab-rf-000/ARCHITECTURE.md; CONTRACTS.md; PRIVACY_AND_QA.md; est
 
 ## Siguiente gate
 Criterios de aceptación de serialización, reentrega y conciliación definidos documentalmente para LAB de implementación. Pendiente revisión integral contra Issue #1 y baselines; no confundir diseño aprobado con controles operativos demostrados. No cerrar ni declarar PASS sin evidencia suficiente. La implementación RF-01/RF-02 se hará en LAB posterior.
+
+## Gate documental — evaluación contra Ticket #1 (2026-10-11)
+| Criterio Issue #1 | Resultado y evidencia |
+| --- | --- |
+| Decisiones consolidadas sin contradicciones | WARN: se corrigió hora de recepción de LISTO y transición de cierre; falta resolver política exacta de corte de bandeja y validación independiente |
+| Contratos funcionales y de datos | PASS documental: CONTRACTS.md define campos, estados, eventos, límites temporales y fallos |
+| EWB/EPB/EDPB/EQAB revisados | PASS de revisión focalizada: se registraron controles de diseño y pendientes de entorno, no cumplimiento operativo |
+| Estructura inicial materializada | PASS: README y cuatro documentos LAB-RF-000 en GitHub |
+| HANDOFF actualizado | PASS de existencia y contenido; cierre pendiente |
+| Validaciones documentales/arquitectónicas PASS | NOT_VERIFIED: no hay revisión independiente ni evidencia final de gate |
+| git diff --check cuando corresponda | N/A para escrituras directas mediante API GitHub, sin working tree; no atribuir PASS al comando |
+| Sin implementar RF-01/RF-02 | PASS por inspección de los cinco artefactos revisados; no hay implementación en ellos |
+
+**Decisión de gate:** NO CERRAR aún. El primer pendiente real es completar la revisión documental final de consistencia y obtener evidencia suficiente para el gate aplicable. La serialización n8n, WhatsApp real y Sheets siguen NOT_VERIFIED y corresponden al LAB de implementación; no deben convertirse en bloqueos artificiales de pruebas funcionales en LAB-000.
