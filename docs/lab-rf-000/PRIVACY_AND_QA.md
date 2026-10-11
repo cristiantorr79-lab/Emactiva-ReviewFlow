@@ -48,6 +48,7 @@ Cambia el entorno, no el sistema.
 - Recordatorio único a +12h sin confirmación; ningún recordatorio tras LISTO.
 - Reejecución, mismo ID de evento reentregado y dos eventos LISTO distintos sin nuevos agradecimientos.
 - Simultaneidad RF-01/RF-02 y dos corridas RF-01.
+- LISTO durante el procesamiento del lote, LISTO entre lectura inicial y relectura previa al recordatorio, fallo de relectura (bloquear envío) y LISTO posterior a la última relectura con recordatorio ya en vuelo (límite conocido).
 - Timeout de WhatsApp con resultado ambiguo y sin reintento ciego.
 - Falla de escritura Sheets antes/después del envío y recuperación.
 - Agradecimiento fallido, recuperación y no duplicación.
