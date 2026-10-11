@@ -21,7 +21,7 @@ README.md; docs/lab-rf-000/ARCHITECTURE.md; CONTRACTS.md; PRIVACY_AND_QA.md; est
 
 ## Evidencia y estado
 - Materialización: PASS de existencia; los cinco archivos fueron leídos desde GitHub el 2026-10-11. Revisión posterior a ajustes pendiente.
-- Revisión arquitectónica: detectada ambigüedad de completed vs recordatorio/agradecimiento; corregida en contratos y arquitectura. Gate final NOT_VERIFIED.
+- Revisión arquitectónica documental: ambigüedad de completed corregida; matriz de 9 escenarios de fallos documentada en ARCHITECTURE.md. PASS de documentación del análisis, NO de comportamiento funcional. Gate final NOT_VERIFIED.
 - Validación funcional n8n/Sheets/WhatsApp: NOT_VERIFIED (fuera de alcance de este LAB).
 - git diff --check: NOT_VERIFIED; repositorio gestionado por API de GitHub, sin working tree local en esta ejecución.
 - Riesgo abierto: serialización real de RF-01, reentrega del webhook y conciliación de operaciones ambiguas sin transacción Sheets.
@@ -29,4 +29,4 @@ README.md; docs/lab-rf-000/ARCHITECTURE.md; CONTRACTS.md; PRIVACY_AND_QA.md; est
 - Pendiente ENVIRONMENT: plantilla aprobada, condiciones de contacto, webhooks, permisos, retención, zona horaria y proveedor.
 
 ## Siguiente gate
-Validar diseño de bandeja/único escritor y coherencia de ventana LISTO de 7 días; verificar coherencia documental y criterios de cierre del Issue #1. No cerrar ni declarar PASS sin evidencia suficiente. La implementación RF-01/RF-02 se hará en LAB posterior.
+Revisar consistencia del contrato con la matriz de fallos, fijar requisitos de serialización y conciliación como gates verificables del LAB de implementación; revisar criterios de cierre del Issue #1. No cerrar ni declarar PASS sin evidencia suficiente. La implementación RF-01/RF-02 se hará en LAB posterior.
