@@ -52,7 +52,7 @@ Cambia el entorno, no el sistema.
 - Falla de escritura Sheets antes/después del envío y recuperación.
 - Agradecimiento fallido, recuperación y no duplicación.
 - Múltiples atenciones del mismo teléfono, entrada inválida y webhook no autenticado.
-- LISTO después del recordatorio pero dentro de 7 días; LISTO fuera de plazo; cierre de recordatorio seguido de confirmación y fallo de agradecimiento.
+- LISTO recibido justo antes o exactamente en el límite de 7 días y procesado después; evento anterior a solicitud; timestamp faltante/no confiable; LISTO fuera de plazo; LISTO después del recordatorio pero dentro de 7 días; cierre de recordatorio seguido de confirmación y fallo de agradecimiento.
 - Verificar transición `completed/reminder_finished` → confirmación pendiente de agradecimiento → `completed/confirmed_thanked`, preservando `reminder_sent_at` y sin marcar agradecimiento ante resultado ambiguo.
 - RF-02: escritura confirmada antes de responder éxito; fallo al responder y reentrega del proveedor; fallo al persistir y no pérdida silenciosa del evento.
 - RF-01: comprobar en despliegue real que dos ejecuciones no se solapan; si no se demuestra, no habilitar envíos automáticos.
