@@ -27,6 +27,16 @@ Localización: la realiza RF-01 al consumir la bandeja, por teléfono normalizad
 Acción: escribir evento mínimo LISTO en bandeja de entrada persistente y confirmar webhook solo tras persistencia. RF-02 no agradece ni actualiza la fila de seguimiento. RF-01 consume eventos, deduplica por ID de proveedor, correlaciona, persiste confirmación y luego envía agradecimiento; duplicados no deben producir nuevo agradecimiento. La reentrega del webhook requiere prueba con proveedor.
 No crear contactos automáticamente desde webhook. No almacenar payload ni conversación completos.
 
+## Contrato de eventos y recuperación (criterios de aceptación del LAB de implementación)
+- `inbox_events`: `provider_event_id`, `phone_e164`, `received_at`, `event_type`, `processing_status` y referencia de atención solo cuando la correlación sea inequívoca. La bandeja no guarda el texto libre ni el payload completo.
+- Estados mínimos de evento: `pending`, `processed`, `ambiguous`, `invalid`. Las escrituras deben ser recuperables: ante fallo posterior a guardar confirmación y anterior a marcar evento procesado, reprocesar no debe provocar otro agradecimiento.
+- RF-01 procesa eventos antes de calcular recordatorios y no puede tener ejecuciones solapadas. La limitación debe demostrarse en el entorno real; una bandera en Sheets no constituye un bloqueo atómico.
+- Para cada salida WhatsApp, la fase `*_prepared` precede al envío; aceptación confirmada permite registrar `*_sent` y marca temporal. Timeout o respuesta incierta deja `*_ambiguous` y bloquea el reenvío hasta conciliación documentada.
+- Evento duplicado con mismo `provider_event_id` no debe repetir confirmación ni agradecimiento. Dos eventos distintos LISTO para la misma atención tampoco deben agradecer dos veces.
+- Correlación con múltiples atenciones: marcar `ambiguous`, no elegir arbitrariamente. Respuesta LISTO hasta 7 días desde solicitud inicial, incluso tras recordatorio, si la atención es inequívoca; después, no reabrir ni agradecer automáticamente.
+- Cierre por recordatorio y posterior confirmación dentro de 7 días: conservar evidencia de recordatorio ya enviado y actualizar `completion_reason` a `confirmed_thanked` únicamente tras agradecimiento confirmado. Si el agradecimiento falla, conservar confirmación y dejar recuperación pendiente.
+- Se debe verificar el manejo real de reentregas del webhook y la política de errores HTTP antes de operar con clientes. No atribuir a Sheets unicidad transaccional ni a WhatsApp idempotencia no demostrada.
+
 ## Errores canónicos propuestos
 INVALID_PHONE, INVALID_DATE, INVALID_REVIEW_LINK, INVALID_WEBHOOK_EVENT, CUSTOMER_NOT_FOUND, AMBIGUOUS_CUSTOMER_MATCH, WA_SEND_FAILED, WA_RESULT_AMBIGUOUS, SHEETS_WRITE_FAILED, OPERATION_NEEDS_RECONCILIATION.
 Los errores no contienen teléfonos, nombres, mensajes ni secretos.
