@@ -74,3 +74,6 @@ Alcance de esta evidencia: inspección documental automatizada, no revisión sem
 
 ## Dictamen de cierre documental
 Revisión de cinco archivos y 11 controles documentales: PASS focalizado. Queda WARN de proceso: cambios directos a main sin PR ni revisión formal. No se debe registrar revisión inexistente. Ticket #1 sigue abierto a la espera de decidir la excepción EWB o realizar revisión humana. Pruebas de integración: NOT_VERIFIED, fuera de LAB-000.
+
+## Aprobación excepcional de cierre — 2026-10-11
+El responsable del proyecto autoriza expresamente, solo para LAB-RF-000, la excepción EWB por integración directa en `main` sin rama/PR. Estado: WARN aceptado; no implica cambio de política corporativa ni precedente automático. Los LAB siguientes vuelven al flujo Issue → rama → PR → revisión → merge. Gate documental: PASS focalizado (11/11 verificaciones); funcionalidad n8n/Sheets/WhatsApp, condiciones de piloto y controles operativos: NOT_VERIFIED y transferidos a implementación. `git diff --check`: N/A en este flujo por API sin árbol local; no se afirma ejecución. Se cierra únicamente la definición y documentación del LAB, no el producto v0.1.
