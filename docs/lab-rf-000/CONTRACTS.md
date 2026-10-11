@@ -18,7 +18,7 @@ RF-01 es el único escritor de estados de seguimiento y único emisor WhatsApp; 
 Elegibilidad de solicitud: pending, request_sent=false, ahora >= appointment_at + 2h, horario permitido, sin operación ambigua.
 Efecto: preparar checkpoint, llamar WhatsApp oficial con plantilla aprobada cuando aplique, persistir resultado confirmado; si incierto, bloquear reenvío y conciliar.
 Elegibilidad de recordatorio: solicitud confirmada, ahora >= request_sent_at + 12h, sin confirmación, reminder_sent=false, horario permitido, sin operación ambigua. Revalidar inmediatamente antes del efecto externo.
-Cierre: registrar completed_at y completion_reason; tras recordatorio `reminder_finished` no significa confirmación. Política de LISTO tardío: pendiente de decisión.
+Cierre: registrar completed_at y completion_reason; tras recordatorio `reminder_finished` no significa confirmación. LISTO tardío: aceptar hasta 7 días desde request_sent_at incluso tras recordatorio, con correlación inequívoca; no enviar segundo recordatorio. Fuera de ventana no reabrir ni agradecer automáticamente. Ventana inicial configurable de 7 días.
 
 ## RF-02
 Entrada: webhook autenticado y validado; extraer solo ID de evento, teléfono remitente, indicación de LISTO y fecha de recepción. Persistir estos metadatos mínimos en pestaña `inbox_events` separada de la atención; no persistir texto libre ni payload crudo.
@@ -32,4 +32,4 @@ INVALID_PHONE, INVALID_DATE, INVALID_REVIEW_LINK, INVALID_WEBHOOK_EVENT, CUSTOME
 Los errores no contienen teléfonos, nombres, mensajes ni secretos.
 
 ## Pendientes que no deben ocultarse
-Proveedor/plantillas/opt-in y ventanas WhatsApp, política de horario, retención, exclusión entre RF-01 y RF-02, LISTO tardío, soporte de serialización en n8n, persistencia/reentrega de webhook y capacidad real de conciliación: NOT_VERIFIED. Se verifican antes de piloto; no son PASS de implementación.
+Proveedor/plantillas/opt-in y ventanas WhatsApp, política de horario, retención, serialización del emisor RF-01, soporte de serialización en n8n, persistencia/reentrega de webhook y capacidad real de conciliación: NOT_VERIFIED. Se verifican antes de piloto; no son PASS de implementación.
