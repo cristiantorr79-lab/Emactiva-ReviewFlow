@@ -7,7 +7,7 @@ Automatización para solicitar y hacer seguimiento de reseñas de clientes de pe
 ## Alcance v0.1
 
 - RF-01: detectar servicio elegible a las 2 horas, solicitar reseña mediante enlace Google, registrar estado y comprobar confirmación a las 12 horas; si no existe, enviar como máximo un recordatorio.
-- RF-02: recibir webhook oficial de WhatsApp y aceptar respuesta exacta normalizada `LISTO`, registrar confirmación y agradecer.
+- RF-02: recibir webhook oficial de WhatsApp, validar `LISTO` y persistir un evento mínimo en una bandeja de Google Sheets. RF-01 procesa ese evento, registra la confirmación y gestiona el agradecimiento.
 - Estados persistidos en Google Sheets, ejecución programada sin nodos Wait duraderos, prevención de duplicados y manejo controlado de errores.
 - `LISTO` es confirmación declarada por el cliente; **no** demuestra que exista una reseña publicada.
 
@@ -21,4 +21,4 @@ Aplicar EWB, EPB, EDPB y EQAB. Reutilizar aprendizajes de LeadFlow de forma prop
 
 **Advertencia:** Google Sheets no ofrece por sí solo reclamación atómica de envíos; las carreras y los resultados ambiguos de WhatsApp requieren controles y validación posterior. No se declara garantía de exactamente una vez.
 
-La documentación y contratos de LAB-RF-000 están pendientes de materialización y validación; este README no acredita PASS.
+Los documentos de LAB-RF-000 ya están materializados en `docs/lab-rf-000/`; su validación de cierre continúa en curso. Este README no acredita PASS funcional.
