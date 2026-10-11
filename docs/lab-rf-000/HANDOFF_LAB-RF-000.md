@@ -19,12 +19,12 @@ Cerrar la definición funcional, técnica y documental de ReviewFlow v0.1 sin im
 README.md; docs/lab-rf-000/ARCHITECTURE.md; CONTRACTS.md; PRIVACY_AND_QA.md; este HANDOFF.
 
 ## Evidencia y estado
-- Materialización de documentos: pendiente de comprobación final de rutas y contenido al cierre de esta ejecución.
-- Validación arquitectónica y coherencia: NOT_VERIFIED; requiere revisión de contratos, estados y riesgos.
+- Materialización: PASS de existencia; los cinco archivos fueron leídos desde GitHub el 2026-10-11. Revisión posterior a ajustes pendiente.
+- Revisión arquitectónica: detectada ambigüedad de completed vs recordatorio/agradecimiento; corregida en contratos y arquitectura. Gate final NOT_VERIFIED.
 - Validación funcional n8n/Sheets/WhatsApp: NOT_VERIFIED (fuera de alcance de este LAB).
 - git diff --check: NOT_VERIFIED; repositorio gestionado por API de GitHub, sin working tree local en esta ejecución.
-- Riesgo abierto: serialización RF-01/RF-02 y reconciliación de operaciones ambiguas sin transacción Sheets.
+- Riesgo abierto: exclusión efectiva RF-01/RF-02 y conciliación de operaciones ambiguas sin transacción Sheets; política de LISTO tardío sin cerrar.
 - Pendiente ENVIRONMENT: plantilla aprobada, condiciones de contacto, webhooks, permisos, retención, zona horaria y proveedor.
 
 ## Siguiente gate
-Comprobar materialización, coherencia documental y criterios de cierre del Issue #1. No cerrar ni declarar PASS sin evidencia suficiente. La implementación RF-01/RF-02 se hará en LAB posterior.
+Resolver exclusión RF-01/RF-02 y LISTO tardío; verificar coherencia documental y criterios de cierre del Issue #1. No cerrar ni declarar PASS sin evidencia suficiente. La implementación RF-01/RF-02 se hará en LAB posterior.
