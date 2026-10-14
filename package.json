@@ -1,0 +1,13 @@
+{
+  "name": "emactiva-reviewflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start:coordinator": "node scripts/run-rf01-coordinator-service.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

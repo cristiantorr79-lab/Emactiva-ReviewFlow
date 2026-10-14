@@ -2,7 +2,7 @@
 
 Automatización para solicitar y hacer seguimiento de reseñas de clientes de pequeñas empresas mediante n8n, Google Sheets y WhatsApp Business oficial.
 
-**Estado:** LAB-RF-000 cerrado documentalmente (PASS con WARN EWB excepcional aprobado); ReviewFlow v0.1 no implementado ni habilitado comercialmente.
+**Estado:** LAB-RF-000 cerrado documentalmente (PASS con WARN EWB excepcional aprobado). LAB-RF-001 contiene un núcleo RF-01 parcial con pruebas sintéticas; integraciones y habilitación comercial siguen pendientes.
 
 ## Alcance v0.1
 
