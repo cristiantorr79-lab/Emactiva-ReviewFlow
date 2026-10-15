@@ -1,0 +1,202 @@
+{
+  "name": "ReviewFlow — RF-01 — Lectura Google Sheets LAB",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "3388a7da-0039-43ae-aeb5-a07ea194c688",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Select in n8n: Emactiva ReviewFlow — LAB-RF-001 — Pruebas"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "services",
+          "mode": "name",
+          "cachedResultName": "services"
+        },
+        "options": {}
+      },
+      "id": "812d7f38-ce73-47ff-b8de-89edbc0b0064",
+      "name": "Read services",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        220,
+        20
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Select in n8n: Emactiva ReviewFlow — LAB-RF-001 — Pruebas"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "inbox_events",
+          "mode": "name",
+          "cachedResultName": "inbox_events"
+        },
+        "options": {}
+      },
+      "id": "611cbf91-a9c4-47b7-a0f8-81c1014cf448",
+      "name": "Read inbox_events",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        220,
+        220
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(item => item.json).filter(row => row && Object.keys(row).length > 0);\nreturn [{ json: { source: \"services\", rows } }];"
+      },
+      "id": "0d20c9de-16b9-487f-a840-b7f5f35d0944",
+      "name": "Collect services",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(item => item.json).filter(row => row && Object.keys(row).length > 0);\nreturn [{ json: { source: \"inbox_events\", rows } }];"
+      },
+      "id": "c85e2650-7c70-4412-bf49-fc20e7827c79",
+      "name": "Collect inbox_events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "id": "94b87ca3-cd2b-4d62-b26d-cc3f5ba1dd45",
+      "name": "Wait for both reads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        700,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// GENERATED from src/rf01-core.js\n// source_sha256: b2913095048efd8eb90c6ebe3ac8f644f4242983d3f1fe739f1df7eb6099cf36\n// Regenerate with: node scripts/generate-rf01-sheets-read-workflow.mjs\n\nconst HOUR_MS = 60 * 60 * 1000;\nconst DAY_MS = 24 * HOUR_MS;\n\nconst STATUSES = new Set([\"pending\", \"request_sent\", \"confirmed\", \"reminder_sent\", \"completed\"]);\nconst PHASES = new Set([\n  \"idle\", \"request_prepared\", \"request_ambiguous\", \"reminder_prepared\",\n  \"reminder_ambiguous\", \"thanks_prepared\", \"thanks_ambiguous\", \"needs_reconciliation\",\n]);\nconst EVENT_STATUSES = new Set([\"pending\", \"processed\", \"ambiguous\", \"invalid\"]);\n\nconst clone = (value, seen = new WeakMap()) => {\n  if (value === null || typeof value !== \"object\") return value;\n  if (seen.has(value)) return seen.get(value);\n  if (Array.isArray(value)) {\n    const copy = [];\n    seen.set(value, copy);\n    for (const item of value) copy.push(clone(item, seen));\n    return copy;\n  }\n  if (Object.prototype.toString.call(value) !== \"[object Object]\") {\n    throw new TypeError(\"UNSUPPORTED_CLONE_VALUE\");\n  }\n  const copy = {};\n  seen.set(value, copy);\n  for (const key of Object.keys(value)) copy[key] = clone(value[key], seen);\n  return copy;\n};\nconst iso = date => date.toISOString();\nconst parseDate = value => {\n  if (typeof value !== \"string\") return null;\n  const date = new Date(value);\n  return Number.isNaN(date.getTime()) || !/[zZ]|[+-]\\d\\d:\\d\\d$/.test(value) ? null : date;\n};\nconst validPhone = value => typeof value === \"string\" && /^\\+[1-9]\\d{7,14}$/.test(value);\nconst validBoolean = value => typeof value === \"boolean\";\nconst validHttpsUrl = value => {\n  if (typeof value !== \"string\" || /\\s/.test(value)) return false;\n  if (typeof URL === \"function\") {\n    try {\n      const parsed = new URL(value);\n      return parsed.protocol === \"https:\" && Boolean(parsed.hostname);\n    } catch { return false; }\n  }\n  const match = value.match(/^https:\\/\\/([^/?#]+)(?:[/?#][^\\s]*)?$/i);\n  if (!match || match[1].includes(\"@\")) return false;\n  let host = match[1];\n  let port = null;\n  if (host.startsWith(\"[\")) {\n    const closing = host.indexOf(\"]\");\n    if (closing < 2 || !/^[0-9a-f:.]+$/i.test(host.slice(1, closing))) return false;\n    const remainder = host.slice(closing + 1);\n    if (remainder && !/^:\\d+$/.test(remainder)) return false;\n    port = remainder ? remainder.slice(1) : null;\n  } else {\n    if ((host.match(/:/g) ?? []).length > 1) return false;\n    const colon = host.lastIndexOf(\":\");\n    if (colon >= 0) { port = host.slice(colon + 1); host = host.slice(0, colon); }\n    const labels = host.split(\".\");\n    if (!labels.length || labels.some(label => !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label))) return false;\n  }\n  return port === null || (/^\\d{1,5}$/.test(port) && Number(port) >= 1 && Number(port) <= 65535);\n};\n\nfunction validateConfig(config) {\n  const errors = [];\n  if (!config || config.criticalConfigPresent !== true) errors.push(\"CRITICAL_CONFIG_MISSING\");\n  if (!config || config.contactAuthorized !== true) errors.push(\"CONTACT_NOT_AUTHORIZED\");\n  for (const [key, expected] of [[\"requestDelayHours\", 2], [\"reminderDelayHours\", 12]]) {\n    if (!config || config[key] !== expected) errors.push(`INVALID_${key.toUpperCase()}`);\n  }\n  if (!config || !Number.isFinite(config.confirmationWindowDays) || config.confirmationWindowDays <= 0) errors.push(\"INVALID_CONFIRMATIONWINDOWDAYS\");\n  return errors;\n}\n\nfunction validateService(service) {\n  const errors = [];\n  if (!service || typeof service.service_id !== \"string\" || !service.service_id.trim()) errors.push(\"INVALID_SERVICE_ID\");\n  if (!validPhone(service?.phone_e164)) errors.push(\"INVALID_PHONE\");\n  if (!parseDate(service?.appointment_at)) errors.push(\"INVALID_APPOINTMENT_AT\");\n  if (!STATUSES.has(service?.status)) errors.push(\"INVALID_STATUS\");\n  if (!PHASES.has(service?.operation_phase)) errors.push(\"INVALID_OPERATION_PHASE\");\n  for (const key of [\"request_sent\", \"review_confirmed\", \"reminder_sent\", \"thanks_sent\"]) {\n    if (!validBoolean(service?.[key])) errors.push(`INVALID_${key.toUpperCase()}`);\n    if (service?.[key] === true && !parseDate(service?.[`${key}_at`])) errors.push(`MISSING_${key.toUpperCase()}_AT`);\n  }\n  if (service?.request_sent_at && !parseDate(service.request_sent_at)) errors.push(\"INVALID_REQUEST_SENT_AT\");\n  if (service?.review_confirmed_at && !parseDate(service.review_confirmed_at)) errors.push(\"INVALID_REVIEW_CONFIRMED_AT\");\n  if (service?.reminder_sent_at && !parseDate(service.reminder_sent_at)) errors.push(\"INVALID_REMINDER_SENT_AT\");\n  if (service?.thanks_sent_at && !parseDate(service.thanks_sent_at)) errors.push(\"INVALID_THANKS_SENT_AT\");\n  if (service?.completed_at && !parseDate(service.completed_at)) errors.push(\"INVALID_COMPLETED_AT\");\n  if (service?.completed_at && ![\"reminder_finished\", \"confirmed_thanked\"].includes(service?.completion_reason)) errors.push(\"INVALID_COMPLETION_REASON\");\n  if (service?.completion_reason && !service?.completed_at) errors.push(\"MISSING_COMPLETED_AT\");\n  if (service?.completion_reason === \"confirmed_thanked\" && service?.thanks_sent !== true) errors.push(\"CONFIRMED_THANKED_WITHOUT_THANKS\");\n  if (service?.request_sent === false && [\"request_sent\", \"confirmed\", \"reminder_sent\", \"completed\"].includes(service?.status)) errors.push(\"STATUS_REQUIRES_REQUEST_SENT\");\n  if (service?.review_confirmed === true && service?.request_sent !== true) errors.push(\"CONFIRMATION_REQUIRES_REQUEST\");\n  if (service?.reminder_sent === true && service?.request_sent !== true) errors.push(\"REMINDER_REQUIRES_REQUEST\");\n  if (service?.thanks_sent === true && service?.review_confirmed !== true) errors.push(\"THANKS_REQUIRES_CONFIRMATION\");\n  if (service?.status === \"confirmed\" && service?.review_confirmed !== true) errors.push(\"STATUS_REQUIRES_CONFIRMATION\");\n  if (service?.status === \"completed\" && !service?.completion_reason) errors.push(\"COMPLETED_REQUIRES_REASON\");\n  if (service?.review_confirmed === true && service?.status === \"pending\") errors.push(\"CONFIRMED_PENDING_CONTRADICTION\");\n  if (!validHttpsUrl(service?.review_link)) errors.push(\"INVALID_REVIEW_LINK\");\n  return [...new Set(errors)];\n}\n\nfunction validateEvent(event) {\n  const errors = [];\n  if (!event || typeof event.provider_event_id !== \"string\" || !event.provider_event_id.trim()) errors.push(\"INVALID_WEBHOOK_EVENT\");\n  if (!validPhone(event?.phone_e164)) errors.push(\"INVALID_PHONE\");\n  if (!parseDate(event?.received_at)) errors.push(\"INVALID_DATE\");\n  if (event?.event_type !== \"LISTO\") errors.push(\"INVALID_WEBHOOK_EVENT\");\n  if (!EVENT_STATUSES.has(event?.processing_status)) errors.push(\"INVALID_EVENT_STATUS\");\n  return [...new Set(errors)];\n}\n\nfunction eligibleForRequest(service, now, config) {\n  const at = parseDate(service.appointment_at);\n  return service.status === \"pending\" && !service.request_sent && service.operation_phase === \"idle\" &&\n    now.getTime() >= at.getTime() + config.requestDelayHours * HOUR_MS;\n}\n\nfunction eligibleForReminder(service, now, config) {\n  const sent = parseDate(service.request_sent_at);\n  return service.request_sent && !service.review_confirmed && !service.reminder_sent &&\n    service.operation_phase === \"idle\" && sent && now.getTime() >= sent.getTime() + config.reminderDelayHours * HOUR_MS;\n}\n\nfunction correlationForEvent(event, services, config) {\n  const received = parseDate(event.received_at);\n  if (!received) return { candidates: [], potential: services.filter(service => service?.phone_e164 === event.phone_e164), uncertain: true };\n  const candidates = [];\n  const potential = [];\n  let uncertain = false;\n  for (const service of services) {\n    if (service?.phone_e164 !== event.phone_e164) continue;\n    if (service.request_sent !== true) {\n      if (service.request_sent !== false) { uncertain = true; potential.push(service); }\n      continue;\n    }\n    const sent = parseDate(service.request_sent_at);\n    if (!sent) { uncertain = true; potential.push(service); continue; }\n    if (received.getTime() >= sent.getTime() && received.getTime() <= sent.getTime() + config.confirmationWindowDays * DAY_MS) {\n      candidates.push(service);\n      potential.push(service);\n    }\n  }\n  return { candidates, potential, uncertain };\n}\n\nconst operationRefFor = (service, kind) => `rf01:${service.service_id}:${kind}`;\n\nasync function observedNow(adapters) {\n  if (typeof adapters.now !== \"function\") return null;\n  try {\n    const value = await adapters.now();\n    return parseDate(value instanceof Date ? value.toISOString() : value);\n  } catch { return null; }\n}\n\nasync function safePersistService(adapters, service) {\n  await adapters.persistService(clone(service));\n}\n\nasync function markEvent(adapters, event, status, serviceId, errorCode) {\n  const next = { ...event, processing_status: status };\n  if (serviceId) next.service_id = serviceId;\n  if (errorCode) next.error_code = errorCode;\n  await adapters.persistEvent(clone(next));\n  Object.assign(event, next);\n}\n\nasync function outgoing(kind, service, adapters, results) {\n  const prefix = kind === \"request\" ? \"request\" : kind === \"reminder\" ? \"reminder\" : \"thanks\";\n  const operationRef = operationRefFor(service, kind);\n  if (service.operation_phase !== \"idle\") {\n    results.blocked.push({ service_id: service.service_id, operationRef, reason: \"OPERATION_NEEDS_RECONCILIATION\" });\n    return false;\n  }\n  const decisionNow = await observedNow(adapters);\n  if (!decisionNow) {\n    results.blocked.push({ service_id: service.service_id, operationRef, reason: \"OPERATION_TIME_UNAVAILABLE\", operation: kind });\n    return false;\n  }\n  if (typeof adapters.isAllowedToSend !== \"function\") {\n    results.blocked.push({ service_id: service.service_id, operationRef, reason: \"SCHEDULE_POLICY_MISSING\", operation: kind });\n    return false;\n  }\n  let schedule;\n  try { schedule = await adapters.isAllowedToSend({ kind, service: clone(service), now: iso(decisionNow), operationRef }); }\n  catch { schedule = { status: \"ambiguous\" }; }\n  if (!schedule || schedule.status !== \"allowed\") {\n    const reason = schedule?.status === \"denied\" ? \"SCHEDULE_DENIED\" : \"SCHEDULE_UNCERTAIN\";\n    results.blocked.push({ service_id: service.service_id, operationRef, reason, operation: kind });\n    return false;\n  }\n  const prepared = { ...service, operation_phase: `${prefix}_prepared`, updated_at: iso(decisionNow) };\n  try {\n    await safePersistService(adapters, prepared);\n    Object.assign(service, prepared);\n  } catch {\n    results.blocked.push({ service_id: service.service_id, operationRef, reason: \"CHECKPOINT_WRITE_FAILED\", operation: kind });\n    return false;\n  }\n\n  let result;\n  try { result = await adapters.send({ kind, service: clone(service), operationRef }); }\n  catch { result = { status: \"ambiguous\" }; }\n\n  if (!result || result.status === \"ambiguous\") {\n    const ambiguousAt = await observedNow(adapters) ?? decisionNow;\n    const ambiguous = { ...service, operation_phase: `${prefix}_ambiguous`, error_code: \"WA_RESULT_AMBIGUOUS\", updated_at: iso(ambiguousAt) };\n    try { await safePersistService(adapters, ambiguous); Object.assign(service, ambiguous); } catch { /* already unsafe */ }\n    results.blocked.push({ service_id: service.service_id, operationRef, reason: \"WA_RESULT_AMBIGUOUS\", operation: kind });\n    return false;\n  }\n  if (result.status === \"failed\") {\n    const failedAt = await observedNow(adapters) ?? decisionNow;\n    const failed = { ...service, operation_phase: \"idle\", error_code: \"WA_SEND_FAILED\", updated_at: iso(failedAt) };\n    try { await safePersistService(adapters, failed); Object.assign(service, failed); } catch {\n      results.blocked.push({ service_id: service.service_id, operationRef, reason: \"SHEETS_WRITE_FAILED\", operation: kind });\n      return false;\n    }\n    results.failed.push({ service_id: service.service_id, operationRef, operation: kind, reason: \"WA_SEND_FAILED\" });\n    return false;\n  }\n  if (result.status !== \"confirmed\") {\n    results.blocked.push({ service_id: service.service_id, operationRef, reason: \"WA_RESULT_AMBIGUOUS\", operation: kind });\n    return false;\n  }\n\n  const acceptedAt = result.accepted_at ? parseDate(result.accepted_at) : await observedNow(adapters);\n  if (!acceptedAt) {\n    const ambiguous = { ...service, operation_phase: `${prefix}_ambiguous`, error_code: \"WA_RESULT_AMBIGUOUS\", updated_at: iso(decisionNow) };\n    try { await safePersistService(adapters, ambiguous); Object.assign(service, ambiguous); } catch { /* already unsafe */ }\n    results.blocked.push({ service_id: service.service_id, operationRef, reason: \"ACCEPTANCE_TIME_UNAVAILABLE\", operation: kind });\n    return false;\n  }\n  const acceptedIso = iso(acceptedAt);\n  const done = { ...service, operation_phase: \"idle\", error_code: null, updated_at: acceptedIso };\n  if (kind === \"request\") Object.assign(done, { status: \"request_sent\", request_sent: true, request_sent_at: acceptedIso });\n  if (kind === \"reminder\") Object.assign(done, { status: \"completed\", reminder_sent: true, reminder_sent_at: acceptedIso, completed_at: acceptedIso, completion_reason: \"reminder_finished\" });\n  if (kind === \"thanks\") Object.assign(done, { status: \"completed\", thanks_sent: true, thanks_sent_at: acceptedIso, completed_at: acceptedIso, completion_reason: \"confirmed_thanked\" });\n  try {\n    await safePersistService(adapters, done);\n    Object.assign(service, done);\n    results.effects.push({ service_id: service.service_id, operationRef, operation: kind, accepted_at: acceptedIso, result: \"confirmed\" });\n    return true;\n  } catch {\n    const ambiguous = { ...service, operation_phase: `${prefix}_ambiguous`, error_code: \"WA_RESULT_AMBIGUOUS\", updated_at: acceptedIso };\n    try { await safePersistService(adapters, ambiguous); Object.assign(service, ambiguous); } catch { /* retain conservative in-memory phase */ }\n    results.blocked.push({ service_id: service.service_id, operationRef, reason: \"WA_RESULT_AMBIGUOUS\", operation: kind });\n    return false;\n  }\n}\n\nasync function consumeEvent(event, allServices, config, now, adapters, results, seenIds, duplicateIds, reminderBlocks) {\n  if (![\"pending\", \"ambiguous\"].includes(event.processing_status)) return { outcome: \"ignored\", affected: [] };\n  if (seenIds.has(event.provider_event_id)) {\n    await markEvent(adapters, event, \"processed\", undefined, \"DUPLICATE_PROVIDER_EVENT\");\n    results.events.push({ provider_event_id: event.provider_event_id, result: \"duplicate\" });\n    return { outcome: \"duplicate\", affected: [] };\n  }\n  const errors = validateEvent(event);\n  if (errors.length) {\n    await markEvent(adapters, event, \"invalid\", undefined, errors[0]);\n    seenIds.add(event.provider_event_id);\n    results.events.push({ provider_event_id: event.provider_event_id, result: \"invalid\", errors });\n    return { outcome: \"invalid\", affected: [] };\n  }\n  const { candidates, potential, uncertain } = correlationForEvent(event, allServices, config);\n  const affected = [...new Set(potential.map(service => service.service_id))];\n  const duplicateCandidate = candidates.some(service => duplicateIds.has(service.service_id));\n  if (uncertain || candidates.length !== 1 || duplicateCandidate || validateService(candidates[0]).length) {\n    const reason = uncertain || candidates.length ? \"AMBIGUOUS_CUSTOMER_MATCH\" : \"CUSTOMER_NOT_FOUND\";\n    for (const serviceId of affected) reminderBlocks.add(serviceId);\n    if (event.processing_status !== \"ambiguous\" || event.error_code !== reason) {\n      try { await markEvent(adapters, event, \"ambiguous\", undefined, reason); }\n      catch {\n        results.blocked.push({ provider_event_id: event.provider_event_id, reason: \"EVENT_STATE_WRITE_FAILED\" });\n      }\n    }\n    results.events.push({ provider_event_id: event.provider_event_id, result: \"ambiguous\", reason });\n    return { outcome: \"ambiguous\", affected };\n  }\n  const service = candidates[0];\n  if (!service.review_confirmed) {\n    const confirmed = { ...service, status: \"confirmed\", review_confirmed: true, review_confirmed_at: event.received_at, error_code: null, updated_at: iso(now) };\n    try { await safePersistService(adapters, confirmed); }\n    catch {\n      reminderBlocks.add(service.service_id);\n      results.blocked.push({ service_id: service.service_id, provider_event_id: event.provider_event_id, reason: \"CONFIRMATION_WRITE_FAILED\" });\n      return { outcome: \"persistence_failed\", affected: [service.service_id] };\n    }\n    Object.assign(service, confirmed);\n  }\n  try {\n    await markEvent(adapters, event, \"processed\", service.service_id);\n  } catch {\n    results.blocked.push({ service_id: service.service_id, provider_event_id: event.provider_event_id, reason: \"EVENT_STATE_WRITE_FAILED\" });\n    reminderBlocks.add(service.service_id);\n    return { outcome: \"persistence_failed\", affected: [service.service_id] };\n  }\n  results.events.push({ provider_event_id: event.provider_event_id, result: \"processed\", service_id: service.service_id });\n  seenIds.add(event.provider_event_id);\n  return { outcome: \"processed\", affected: [service.service_id] };\n}\n\nasync function runRf01Cycle(input) {\n  const now = parseDate(input?.now);\n  if (!now) throw new Error(\"INVALID_CLOCK\");\n  const services = clone(input.services ?? []);\n  const events = clone(input.inboxEvents ?? []);\n  const adapters = input.adapters;\n  if (!adapters || ![\"persistService\", \"persistEvent\", \"send\", \"rereadForReminder\"].every(k => typeof adapters[k] === \"function\")) throw new Error(\"INVALID_ADAPTERS\");\n  const results = { effects: [], events: [], blocked: [], failed: [], validation: [] };\n  const configErrors = validateConfig(input.config);\n  const timingErrors = configErrors.filter(error => error.startsWith(\"INVALID_\"));\n  if (timingErrors.length) {\n    results.blocked.push({ reason: configErrors[0], errors: configErrors });\n    return { services, inboxEvents: events, results };\n  }\n  const outboundBlocked = configErrors.length > 0;\n  const ids = new Set();\n  const duplicateIds = new Set();\n  for (const service of services) {\n    const errors = validateService(service);\n    if (ids.has(service.service_id)) { errors.push(\"DUPLICATE_SERVICE_ID\"); duplicateIds.add(service.service_id); }\n    ids.add(service.service_id);\n    if (errors.length) results.validation.push({ service_id: service.service_id, errors: [...new Set(errors)] });\n    if (PHASES.has(service.operation_phase) && service.operation_phase !== \"idle\") {\n      results.blocked.push({ service_id: service.service_id, reason: \"OPERATION_NEEDS_RECONCILIATION\" });\n    }\n  }\n  const invalidIds = new Set(results.validation.map(v => v.service_id));\n  const validServices = services.filter(s => !invalidIds.has(s.service_id));\n  const seenIds = new Set(events.filter(e => [\"processed\", \"invalid\"].includes(e.processing_status)).map(e => e.provider_event_id));\n  const reminderBlocks = new Set();\n\n  for (const event of events) await consumeEvent(event, services, input.config, now, adapters, results, seenIds, duplicateIds, reminderBlocks);\n\n  if (outboundBlocked) {\n    results.blocked.push({ reason: configErrors[0], errors: configErrors });\n    return { services, inboxEvents: events, results };\n  }\n\n  // Recover a confirmed-but-not-thanked service independently of any later duplicate LISTO.\n  for (const service of validServices) {\n    if (service.review_confirmed && !service.thanks_sent) await outgoing(\"thanks\", service, adapters, results);\n  }\n\n  for (const service of validServices) {\n    const current = await observedNow(adapters);\n    if (!current) {\n      results.blocked.push({ service_id: service.service_id, operationRef: operationRefFor(service, \"request\"), reason: \"OPERATION_TIME_UNAVAILABLE\", operation: \"request\" });\n      continue;\n    }\n    if (eligibleForRequest(service, current, input.config)) await outgoing(\"request\", service, adapters, results);\n  }\n\n  for (const service of validServices) {\n    if (reminderBlocks.has(service.service_id)) {\n      results.blocked.push({ service_id: service.service_id, reason: \"UNRESOLVED_CONFIRMATION_EVENT\" });\n      continue;\n    }\n    let current = await observedNow(adapters);\n    if (!current) {\n      results.blocked.push({ service_id: service.service_id, operationRef: operationRefFor(service, \"reminder\"), reason: \"OPERATION_TIME_UNAVAILABLE\", operation: \"reminder\" });\n      continue;\n    }\n    if (!eligibleForReminder(service, current, input.config)) continue;\n    let reread;\n    try { reread = await adapters.rereadForReminder({ service_id: service.service_id, phone_e164: service.phone_e164 }); }\n    catch { reread = { status: \"failed\" }; }\n    if (!reread || reread.status !== \"confirmed\" || !reread.service || !Array.isArray(reread.events)) {\n      results.blocked.push({ service_id: service.service_id, reason: \"REMINDER_REVALIDATION_FAILED\" });\n      continue;\n    }\n    const freshErrors = validateService(reread.service);\n    if (reread.service.service_id !== service.service_id || reread.service.phone_e164 !== service.phone_e164) {\n      results.blocked.push({ service_id: service.service_id, reason: \"REMINDER_REVALIDATION_IDENTITY_MISMATCH\" });\n      continue;\n    }\n    if (freshErrors.length) {\n      results.blocked.push({ service_id: service.service_id, reason: \"REMINDER_REVALIDATION_INVALID\" });\n      continue;\n    }\n    Object.assign(service, clone(reread.service));\n    for (const event of clone(reread.events)) await consumeEvent(event, services, input.config, now, adapters, results, seenIds, duplicateIds, reminderBlocks);\n    if (reminderBlocks.has(service.service_id)) {\n      results.blocked.push({ service_id: service.service_id, reason: \"UNRESOLVED_CONFIRMATION_EVENT\" });\n      continue;\n    }\n    if (service.review_confirmed) {\n      if (!service.thanks_sent) await outgoing(\"thanks\", service, adapters, results);\n      continue;\n    }\n    current = await observedNow(adapters);\n    if (!current) {\n      results.blocked.push({ service_id: service.service_id, operationRef: operationRefFor(service, \"reminder\"), reason: \"OPERATION_TIME_UNAVAILABLE\", operation: \"reminder\" });\n      continue;\n    }\n    if (!eligibleForReminder(service, current, input.config)) continue;\n    await outgoing(\"reminder\", service, adapters, results);\n  }\n  return { services, inboxEvents: events, results };\n}\n\nconst serviceBooleanFields = [\"request_sent\", \"review_confirmed\", \"reminder_sent\", \"thanks_sent\"];\nconst serviceDateFields = [\"appointment_at\", \"request_sent_at\", \"review_confirmed_at\", \"reminder_sent_at\", \"thanks_sent_at\", \"completed_at\", \"updated_at\"];\nconst serviceOptionalFields = [\"request_sent_at\", \"review_confirmed_at\", \"reminder_sent_at\", \"thanks_sent_at\", \"completed_at\", \"completion_reason\", \"error_code\"];\n\nfunction normalizeBoolean(value, field, errors) {\n  if (value === true || value === false) return value;\n  if (typeof value === \"string\") {\n    const normalized = value.trim().toLowerCase();\n    if (normalized === \"true\") return true;\n    if (normalized === \"false\") return false;\n  }\n  errors.push(\"AMBIGUOUS_BOOLEAN_\" + field.toUpperCase());\n  return value;\n}\n\nfunction normalizeDate(value, field, optional, errors) {\n  if (value === \"\" || value === null || value === undefined) {\n    if (optional) return null;\n    errors.push(\"MISSING_\" + field.toUpperCase());\n    return value;\n  }\n  if (typeof value !== \"string\") {\n    errors.push(\"AMBIGUOUS_DATE_\" + field.toUpperCase());\n    return value;\n  }\n  const parsed = parseDate(value.trim());\n  if (!parsed) {\n    errors.push(\"INVALID_\" + field.toUpperCase());\n    return value;\n  }\n  return parsed.toISOString();\n}\n\nfunction normalizeText(value, field, optional, errors) {\n  if (value === \"\" || value === null || value === undefined) {\n    if (optional) return null;\n    errors.push(\"MISSING_\" + field.toUpperCase());\n    return value;\n  }\n  if (typeof value !== \"string\") {\n    errors.push(\"AMBIGUOUS_TEXT_\" + field.toUpperCase());\n    return value;\n  }\n  return value.trim();\n}\n\nfunction normalizeService(row) {\n  const errors = [];\n  const normalized = { ...row };\n  for (const field of [\"service_id\", \"customer_name\", \"phone_e164\", \"review_link\", \"status\", \"operation_phase\"]) {\n    normalized[field] = normalizeText(row[field], field, false, errors);\n  }\n  for (const field of [\"completion_reason\", \"error_code\"]) {\n    normalized[field] = normalizeText(row[field], field, true, errors);\n  }\n  for (const field of serviceBooleanFields) normalized[field] = normalizeBoolean(row[field], field, errors);\n  for (const field of serviceDateFields) normalized[field] = normalizeDate(row[field], field, serviceOptionalFields.includes(field), errors);\n  errors.push(...validateService(normalized));\n  return { normalized, errors: [...new Set(errors)] };\n}\n\nfunction normalizeEvent(row) {\n  const errors = [];\n  const normalized = { ...row };\n  for (const field of [\"provider_event_id\", \"phone_e164\", \"event_type\", \"processing_status\"]) {\n    normalized[field] = normalizeText(row[field], field, false, errors);\n  }\n  normalized.received_at = normalizeDate(row.received_at, \"received_at\", false, errors);\n  errors.push(...validateEvent(normalized));\n  return { normalized, errors: [...new Set(errors)] };\n}\n\nconst inputs = $input.all().map(item => item.json);\nconst servicesEnvelope = inputs.find(item => item.source === \"services\");\nconst eventsEnvelope = inputs.find(item => item.source === \"inbox_events\");\nif (!servicesEnvelope || !eventsEnvelope) throw new Error(\"INCOMPLETE_SHEETS_READ\");\nconst serviceRows = Array.isArray(servicesEnvelope.rows) ? servicesEnvelope.rows : [];\nconst eventRows = Array.isArray(eventsEnvelope.rows) ? eventsEnvelope.rows : [];\nconst checkedServices = serviceRows.map(normalizeService);\nconst checkedEvents = eventRows.map(normalizeEvent);\nconst acceptedServices = checkedServices.filter(item => item.errors.length === 0).map(item => item.normalized.service_id);\nconst rejectedServices = checkedServices.filter(item => item.errors.length > 0).map(item => ({ service_id: item.normalized.service_id ?? null, errors: item.errors }));\nconst acceptedEvents = checkedEvents.filter(item => item.errors.length === 0).map(item => item.normalized.provider_event_id);\nconst rejectedEvents = checkedEvents.filter(item => item.errors.length > 0).map(item => ({ provider_event_id: item.normalized.provider_event_id ?? null, errors: item.errors }));\n\nreturn [{ json: {\n  counts: {\n    servicesRead: serviceRows.length,\n    servicesAccepted: acceptedServices.length,\n    servicesRejected: rejectedServices.length,\n    eventsRead: eventRows.length,\n    eventsAccepted: acceptedEvents.length,\n    eventsRejected: rejectedEvents.length,\n  },\n  accepted: { services: acceptedServices, events: acceptedEvents },\n  rejected: { services: rejectedServices, events: rejectedEvents },\n  note: \"Un evento válido como registro no implica una atención confirmada.\",\n} }];\n"
+      },
+      "id": "071b0419-9048-40db-baec-f6a04427a6dc",
+      "name": "Normalize and validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read services",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read inbox_events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read services": {
+      "main": [
+        [
+          {
+            "node": "Collect services",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read inbox_events": {
+      "main": [
+        [
+          {
+            "node": "Collect inbox_events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect services": {
+      "main": [
+        [
+          {
+            "node": "Wait for both reads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect inbox_events": {
+      "main": [
+        [
+          {
+            "node": "Wait for both reads",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait for both reads": {
+      "main": [
+        [
+          {
+            "node": "Normalize and validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
