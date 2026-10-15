@@ -2,6 +2,26 @@
 
 Artefacto: `workflows/ReviewFlow_RF01_Principal_actual.json`. El nombre interno definitivo es **ReviewFlow — RF-01 — Principal**. Se mantiene `active=false`.
 
+## Validación integrada CA05–CA08
+
+El modo manual vigente permite exclusivamente tres IDs de atención y dos IDs de evento declarados en `integratedTest`. La excepción requiere simultáneamente Manual Trigger, `http://host.docker.internal:18787`, `testMode=true`, proveedor `simulated`, prefijos `synthetic-ca05-` a `synthetic-ca08-` y las cuatro compuertas productivas en `false`. No autoriza `request`, Schedule, IDs distintos ni una ruta directa a Meta. Probar un escenario por vez y eliminar sus filas antes del siguiente.
+
+Todos los servicios usan `customer_name=Synthetic QA`, `review_link=https://example.test/review`, banderas/timestamps no indicados en `false`/vacío, `operation_phase=idle`, `error_code` y cierre vacíos:
+
+1. **LISTO:** servicio `synthetic-ca05-listo-1`, teléfono `+12025550105`, `appointment_at=2026-10-10T10:00:00Z`, `status=request_sent`, `request_sent=true`, `request_sent_at=2026-10-10T12:00:00Z`, `updated_at=2026-10-10T12:00:00Z`. Evento `synthetic-ca05-event-1`, mismo teléfono, `received_at=2026-10-11T12:00:00Z`, `event_type=LISTO`, `processing_status=pending`, `service_id` vacío. Una ejecución debe dejar servicio `confirmed`, confirmación fechada y evento `processed` asociado; no debe enviar agradecimiento en ese mismo ciclo.
+2. **Recordatorio:** servicio `synthetic-ca07-reminder-1`, teléfono `+12025550107`, mismos cita/enlace, `status=request_sent`, `request_sent=true`, `request_sent_at=2026-10-10T00:00:00Z`, `updated_at=2026-10-10T00:00:00Z`; sin evento para ese teléfono. Una ejecución debe producir una sola operación simulada `reminder`, finalizar `reminder_finished` y no repetirla.
+3. **Agradecimiento:** servicio `synthetic-ca08-thanks-1`, teléfono `+12025550108`, mismos cita/enlace, `status=confirmed`, `request_sent=true`, `request_sent_at=2026-10-10T12:00:00Z`, `review_confirmed=true`, `review_confirmed_at=2026-10-11T00:00:00Z`, `updated_at=2026-10-11T00:00:00Z`. Una ejecución debe producir una sola operación simulada `thanks` y finalizar `confirmed_thanked`.
+
+Después de cada ejecución, comprobar la fila y ejecutar:
+
+```powershell
+$env:RF01_CA05_CA08_DATABASE_URL = "<DSN PostgreSQL aislado del rol mínimo>"
+node scripts/verify-rf01-ca05-ca08-test.mjs listo
+node scripts/verify-rf01-ca05-ca08-test.mjs listo --cleanup
+```
+
+Sustituir `listo` por `reminder` o `thanks` en las rondas siguientes. Después del cleanup PostgreSQL, eliminar manualmente solo el servicio/evento sintético del escenario en Sheets y confirmar su ausencia. Si cualquier salida difiere, detener la ronda: no reejecutar automáticamente ni cambiar a proveedor real.
+
 ## Ruta saliente mediante coordinador HTTP — 2026-10-13
 
 La rama `request`/`reminder`/`thanks` ya no llama directamente a Graph API. El nodo con ID estable `wa` se denomina **RF-01 Coordinator HTTP** y ejecuta una única llamada `POST <baseUrl>/v1/operations/outgoing`. No existe una segunda ruta de WhatsApp en el JSON generado.

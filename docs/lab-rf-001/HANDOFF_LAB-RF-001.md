@@ -422,3 +422,61 @@ Esta sección es el estado vigente del gate y prevalece sobre estados histórico
 **Validaciones manuales agrupadas indispensables:** (1) una corrida principal LISTO→confirmación→evento processed; (2) recordatorio simulado único con relectura y bloqueo por LISTO; (3) agradecimiento simulado, incluido fallo/recuperación y LISTO tardío; (4) una corrida programada solapada con manual solo cuando exista autorización segura para habilitar Schedule; (5) definir zona, horarios, autorización de contacto, atraso máximo y retención operativa. Usar exclusivamente datos/pruebas autorizados y limpiar Sheets/PostgreSQL al finalizar.
 
 **Bloqueadores de cierre:** CA05–CA08 carecen de evidencia integrada del workflow principal; CA09 no cubre manual/Schedule; faltan parámetros operativos/privacidad de entorno; CA11 no tiene gate ENV completo; CA12 requiere autorización para commit/PR/revisión/merge. Por ello LAB-RF-001 **no está listo para declararse cerrado todavía**, aunque todo lo automatizable de este bloque quedó completado sin FAIL abierto.
+
+### LAB-RF-001 — Preparación integrada CA05–CA08 — 2026-10-14
+
+**Primer impedimento real:** Manual Trigger cerraba las escrituras por diseño y la única excepción existente era CA09 `request`, con salida sin Sheets. Por ello LISTO, recordatorio y agradecimiento no podían recorrer el workflow principal con proveedor simulado. Al seguir LISTO apareció además un defecto funcional: `Classify coordinator result` aceptaba únicamente `PROVIDER_ACCEPTED`; la respuesta válida de confirmación `CONFIRMATION_RECORDED` quedaba `uncertain` y nunca proyectaba la confirmación ni habilitaba `processed`.
+
+**Corrección acotada:** el mismo workflow de 37 nodos incorpora `integratedTest`, habilitado solo para Manual Trigger, tres `service_id` y dos `provider_event_id` sintéticos explícitos, hostname exacto `host.docker.internal:18787`, `testMode=true`, proveedor `simulated` y cuatro gates productivos en `false`. La excepción permite únicamente `confirm`, evento duplicado, `reminder` y `thanks`; excluye `request`, IDs no declarados, Schedule y cualquier ruta directa a Meta. La relectura saliente exige la misma identidad/configuración. El clasificador acepta `CONFIRMATION_RECORDED` solo para `kind=confirm`, con versión/proyección más nuevas; respuestas incompletas siguen fail-closed. No se añadieron nodos, workflows, secretos ni infraestructura.
+
+**Evidencia local nueva:** `rf01-ca05-ca08-integrated.test.js` **1/1 PASS**: planifica confirmación, recordatorio y agradecimiento para el scope exacto; conserva todas las compuertas cerradas; rechaza ID ajeno y Schedule; verifica coordinador simulado, ausencia de Graph API y proyección de `CONFIRMATION_RECORDED`. Generador y JSON vigente sincronizados **PASS**, 37 nodos. `verify-rf01-ca05-ca08-test.mjs` valida por escenario estado/versiones, cero operaciones para LISTO, una sola operación/attempt aceptada para reminder/thanks y cleanup transaccional limitado al ID sintético; sintaxis **PASS**, ejecución PostgreSQL **NOT_VERIFIED** hasta la ronda real.
+
+**Procedimiento ENV:** documentado en `RF01_MAIN_WORKFLOW.md` con filas exactas. Ejecutar secuencialmente LISTO, reminder y thanks, un escenario por vez; verificar Sheets y PostgreSQL, ejecutar el verificador y su `--cleanup`, eliminar las filas sintéticas y confirmar ausencia antes del siguiente. Si hay desviación, detener sin reintento automático. Schedule y Meta permanecen deshabilitados.
+
+**Estado:** CA05–CA08 continúan **NOT_VERIFIED integrados** hasta evidencia de n8n real. Los PASS SYSTEM/PostgreSQL anteriores se conservan sin repetición. Riesgo residual: el workflow confía en que el servicio local configurado esté arrancado efectivamente con proveedor simulado; la ronda debe comprobar esa configuración externa antes del primer trigger. PR #8 y ticket #2 no fueron modificados por API; no hubo commit, push ni merge.
+
+### LAB-RF-001 — Corrección puntual CA05 — 2026-10-14
+
+**FAIL real aportado:** tras confirmar LISTO en PostgreSQL, el coordinador devolvió `outcome=blocked`, `code=SERVICE_ALREADY_CONFIRMED`, `serviceVersion=2` y una proyección autoritativa confirmada. `Classify coordinator result` exigía una versión estrictamente mayor para toda recuperación, por lo que produjo `route=blocked` y no proyectó la confirmación ni el evento en Sheets.
+
+**Corrección acotada:** `SERVICE_ALREADY_CONFIRMED` se recupera como `confirmation_projection` únicamente para un comando `confirm` con evento identificado, identidad exacta, versión autoritativa igual o superior y proyección coherente (`status=confirmed`, `review_confirmed=true` y timestamp de confirmación válido). Una versión inferior, otra identidad, otro tipo de comando o una proyección incompleta permanecen bloqueados sin exponer la proyección. `STALE_VERSION`, aceptación normal, sanitización y comportamiento fail-closed conservan sus contratos.
+
+**Evidencia local:** regeneración reproducible del workflow vigente **PASS**, 37 nodos; prueba focalizada **2/2 PASS**, incluyendo versión igual válida, versión inferior, identidad incorrecta, respuesta incompleta y tipo de comando incorrecto. Schedule y compuertas siguen cerrados; Meta no fue ejecutado. La recuperación en n8n real queda **NOT_VERIFIED** hasta que Cristian aplique el código actualizado del nodo y repita únicamente CA05.
+
+### LAB-RF-001 — Corrección puntual CA07 — 2026-10-14
+
+**FAIL real aportado:** n8n 2.28.6 informó `Code doesn't return items properly` al ejecutar `Revalidate and prepare checkpoint` en modo Run Once for All Items; una devolución mínima sí funcionó.
+
+**Causa demostrada:** el generador construía el nodo mediante un template JavaScript no crudo. El literal fuente destinado a comprobar HTTPS perdió sus escapes y quedó en el JSON como `/^https:///`, código inválido antes de alcanzar el `return`. No era un defecto del formato lógico de salida ni de los datos CA07.
+
+**Corrección acotada:** la comprobación usa ahora `baseUrl.startsWith("https://")`, compatible con el sandbox y sin relajar la excepción HTTP local simulada. El resto de la relectura conserva validación de identidad/fila, bloqueo por eventos LISTO pendientes o inciertos, configuración fail-closed y la misma referencia idempotente.
+
+**Evidencia local:** código completo generado ejecutado sin `URL` global con fixture CA07; salida serializable `[{json: ...}]` **PASS**; evento coincidente bloqueado, evento inválido del mismo teléfono bloqueado y evento de otro teléfono no bloqueante **PASS**. Prueba focalizada total **3/3 PASS**; generador reproducible **PASS**, 37 nodos. Schedule, compuertas y Meta permanecen deshabilitados. La repetición CA07 en n8n real sigue **NOT_VERIFIED**.
+
+### LAB-RF-001 — Propagación sintética CA07 — 2026-10-14
+
+**FAIL real aportado:** `Filter outgoing command` entregó el recordatorio de `synthetic-ca07-reminder-1` sin `integratedTest=true`; la revalidación rechazó correctamente el HTTP local con `COORDINATOR_CONFIG_INVALID`.
+
+**Causa:** el filtro saliente era pasivo y dependía exclusivamente del marcador emitido por el gate. Además, el generador preservaba el código anterior de ese filtro al regenerar porque no figuraba entre sus nodos Code gestionados. Por ello una cadena visual desincronizada no podía reconstruir el marcador ya autorizado por el planificador.
+
+**Corrección acotada:** `Filter outgoing command` deriva `integratedTest` del resultado del planificador y vuelve a exigir autorización sintética, modo manual, misma identidad/ejecución/comando, seis gates cerrados, ID CA05–CA08, endpoint local exacto y proveedor `simulated`. Schedule, otra identidad o proveedor real fuerzan `false`. El generador gestiona ahora este nodo y sincroniza el JSON principal sin alterar conexiones ni cantidad de nodos.
+
+**Evidencia local:** prueba focalizada total **4/4 PASS**, incluida propagación con marcador ausente, rechazo programado, identidad distinta y proveedor real; generación reproducible **PASS**, 37 nodos. CA07 real permanece **NOT_VERIFIED** hasta aplicar el código actualizado de `Filter outgoing command` y repetir el escenario.
+
+## Excepción QA RF001-EX-001 — 2026-10-15
+
+- Aprobación: titular del proyecto, autorizada expresamente el 2026-10-15.
+- Alcance: cierre del trabajo de LAB-RF-001 con limitaciones de integración identificadas.
+- CA05: PASS integrado n8n, Sheets y PostgreSQL; cleanup PASS.
+- CA06: PASS de lógica y correlación normal integrada; casos ambiguos y fuera de ventana en n8n NOT_VERIFIED.
+- CA07: PASS n8n/PostgreSQL; cleanup comprobado con cero estados y operaciones restantes.
+- CA08: PASS funcional y PostgreSQL; cleanup PASS.
+- CA09: PASS concurrencia manual/manual; manual/Schedule NOT_VERIFIED.
+- CA10: PASS focalizado; WARN por posible retención histórica de ejecuciones.
+- Google Sheets: limpieza de filas de prueba confirmada por el titular.
+- Riesgo: no se acredita funcionamiento programado ni exclusión manual/Schedule.
+- Mitigación: Schedule y envíos reales Meta permanecen deshabilitados.
+- Responsable: titular del proyecto Emactiva.
+- Condición de revisión: resolver las integraciones pendientes antes de habilitar el piloto.
+- Decisión: excepción aceptada para documentar el alcance validado; no equivale a PASS del GATE-PILOT ni autoriza producción.
+- GATE-LAB: pendiente de revisión final del PR y comprobación de criterios bloqueantes conforme a EQAB.
