@@ -480,3 +480,11 @@ Esta sección es el estado vigente del gate y prevalece sobre estados histórico
 - Condición de revisión: resolver las integraciones pendientes antes de habilitar el piloto.
 - Decisión: excepción aceptada para documentar el alcance validado; no equivale a PASS del GATE-PILOT ni autoriza producción.
 - GATE-LAB: pendiente de revisión final del PR y comprobación de criterios bloqueantes conforme a EQAB.
+
+## Resolución documental de revisión PR #8 — 2026-10-15
+
+**Arquitectura corregida en README:** PostgreSQL queda documentado como autoridad operacional de estados, versiones, concurrencia e idempotencia; Google Sheets permanece como entrada y proyección recuperable. Se registra el workflow principal inactivo de 37 nodos, el estado real de RF-01 y el alcance no productivo de `RF001-EX-001`.
+
+**Derivado redundante eliminado:** la búsqueda focalizada no encontró consumidores de `workflows/RF01_Plan_one_safe_command.js` en scripts, pruebas, configuración ni workflows. Era una copia antigua del código embebido por `scripts/generate-rf01-main-workflow.mjs`, ya identificada como excluible del commit; se elimina para conservar una sola fuente reproducible. La referencia histórica de preparación Git queda superada por esta resolución.
+
+**Pendientes reales:** CA06 ambiguo/fuera de ventana en n8n, concurrencia manual/Schedule, ejecución programada, Meta real, parámetros operativos/privacidad de entorno y GATE-PILOT continúan `NOT_VERIFIED` o pendientes según `RF001-EX-001`. Schedule y envíos reales permanecen deshabilitados. No se hizo commit, push ni merge ni se modificó PR #8 por API.
