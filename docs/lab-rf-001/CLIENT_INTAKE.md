@@ -2,6 +2,12 @@
 
 Fuente: `apps-script/registro-clientes/Code.gs`. Este mecanismo no modifica RF-01, `inbox_events` ni el contrato de `services`.
 
+## Alcance arquitectónico vigente
+
+Este Apps Script es un adaptador **HYBRID** específico del piloto para capturar atenciones en Google Sheets. Las reglas de identidad, autorización y formato contractual que aplica deben permanecer compatibles con **SYSTEM**; documento, permisos, propiedades y enlace pertenecen a **ENVIRONMENT**. Sheets no es la autoridad operacional: el coordinador resuelve/importa la atención en PostgreSQL y proyecta el estado técnico de vuelta a `services`. El script no escribe PostgreSQL ni `inbox_events`.
+
+Este ingreso no es un requisito universal ni acredita integración con CRM, ERP u otros sistemas. Esos orígenes requerirían adaptadores y validaciones propias. Las rutas visuales siguientes son nombres de UI del entorno, no rutas locales del repositorio.
+
 ## Corrección de almacenamiento E.164 — 2026-10-13
 
 Google Sheets interpretaba `+56912345678` durante `appendRow()` y n8n recibía `56912345678`. La escritura de `services` ahora obtiene la siguiente fila bajo el Document Lock existente, aplica formato de texto plano (`@`) únicamente a la celda de `phone_e164` y después escribe los mismos 19 valores mediante `setValues`. La columna se localiza por el encabezado contractual, no por un índice fijo. Autorización, evidencia, ID, deduplicación, recuperación e idempotencia no cambian.

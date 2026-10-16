@@ -1,6 +1,12 @@
 # RF001-T01 — Coordinador PostgreSQL
 
-Estado: migración 006 aplicada en PostgreSQL 16.15; corrección incremental pendiente de comprobación real e integración n8n **NOT_VERIFIED**.
+Estado vigente: migraciones 006–008 y coordinador versionados; PostgreSQL es la autoridad operacional implementada para estados, versiones, concurrencia e idempotencia. La operación programada en n8n y WhatsApp real siguen deshabilitadas/NOT_VERIFIED; véase el HANDOFF de LAB-RF-001 y la excepción RF001-EX-001.
+
+## Clasificación EDPB y alcance
+
+El modelo y los contratos funcionales son **SYSTEM**; repositorio, mapeador, API y coordinador son **HYBRID**; base, rol, DSN, TLS, tokens, proveedor y operación son **ENVIRONMENT**. PostgreSQL es la autoridad de la implementación v0.1, no un requisito universal del producto. Sheets conserva `inbox_events` y funciona como entrada/proyección del piloto. Un adaptador futuro podrá usar otro sistema compatible después de validación específica; no se declara esa compatibilidad probada.
+
+Las secciones que dicen “futuro”, “pendiente” o “todavía no” conservan la secuencia histórica de LAB-RF-001. El estado vigente queda fijado por las secciones “Estado operativo versionado”, “bloque 2” y “bloque 3”, sin borrar la evidencia previa.
 
 ## Artefactos
 
@@ -23,7 +29,7 @@ La migración 006 original se instaló, pero `start_send('rf001-test-A', 1, 1)` 
 Para una base de pruebas que ya recibió la 006, aplicar sin borrar tablas ni filas:
 
 ```powershell
-psql "$env:RF01_PG_TEST_URL" --set ON_ERROR_STOP=1 --file "C:\Users\DELL\Emactiva\Emactiva-ReviewFlow\db\migrations\007_rf001_t01_qualify_operation_state.sql"
+psql "$env:RF01_PG_TEST_URL" --set ON_ERROR_STOP=1 --file "db/migrations/007_rf001_t01_qualify_operation_state.sql"
 ```
 
 La 006 también contiene la corrección para instalaciones nuevas. La prueba real focalizada exige una base aislada y autorización expresa para recrear solo el esquema `reviewflow_coordinator`:
@@ -113,9 +119,9 @@ npm run start:coordinator
 
 Los logs estructurados contienen únicamente evento, outcome y código. No se registra request body, respuesta Meta, teléfono, cliente ni enlace. El cuerpo HTTP se limita a 16 KiB y el intento al proveedor recibe `AbortSignal`.
 
-### Integración futura en RF-01
+### Integración RF-01 — antecedentes y validación inicial
 
-El JSON versionado y su generador ya preparan una única llamada HTTP autenticada; el workflow importado en n8n no fue modificado. Para la validación aislada, iniciar el servicio con configuración de prueba y WhatsApp simulado; después comprobar `/health` y dos POST simultáneos con la misma operación. Solo tras PASS real se aplicará visualmente el tramo outgoing. Los nodos/mappings y credenciales de Google Sheets se conservan; Schedule, escrituras y WhatsApp reales permanecen deshabilitados.
+El workflow RF-01 versionado incorpora la llamada HTTP autenticada al coordinador. Las instrucciones originales de validación aislada y aplicación visual corresponden a una etapa histórica de LAB-RF-001; la integración vigente, las pruebas ejecutadas y sus limitaciones están registradas en el HANDOFF de LAB-RF-001. Los nodos/mappings y credenciales de Google Sheets se conservan; Schedule, escrituras y WhatsApp reales permanecen deshabilitados.
 
 La primera comprobación real debe usar la prueba opcional, que conecta con PostgreSQL pero sustituye Meta por un emisor en memoria:
 
