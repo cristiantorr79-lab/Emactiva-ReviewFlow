@@ -1,6 +1,10 @@
 # LAB-RF-001 — Interfaz del núcleo RF-01
 
-Estado: implementación parcial y simulada. No es un workflow importable ni acredita integración.
+Estado: contrato de núcleo implementado y cubierto por evidencia de LAB-RF-001; la operación programada y Meta real continúan deshabilitadas/NOT_VERIFIED.
+
+## Frontera arquitectónica vigente
+
+El contrato del núcleo es **SYSTEM** y no depende de Sheets, PostgreSQL, n8n ni WhatsApp. Los adaptadores son **HYBRID**. En el piloto v0.1, n8n orquesta, Sheets aporta atenciones y `inbox_events` y recibe proyecciones, mientras PostgreSQL es la autoridad operacional; el coordinador HTTP/PostgreSQL es la única ruta saliente a WhatsApp. Credenciales, endpoints, almacenamiento y despliegue son **ENVIRONMENT**. Otros sistemas podrán implementar los mismos contratos tras validación, pero no están integrados ni verificados.
 
 ## Entrada
 
@@ -38,10 +42,10 @@ Una fase `*_prepared`, `*_ambiguous` o `needs_reconciliation` presente al inicia
 
 Un `service_id` duplicado en cualquier fila veta la confirmación de ese identificador incluso cuando las filas tengan teléfonos diferentes. El evento queda para conciliación sin escribir `review_confirmed`, sin asignarle `service_id` y sin agradecer. Eventos de teléfonos ajenos o demostrablemente fuera de la ventana no bloquean recordatorios sanos por rutina.
 
-## Integración futura con n8n
+## Integración con n8n y evolución histórica
 
-El workflow RF-01 futuro deberá mapear una ejecución programada a una llamada del núcleo y proveer adaptadores para Sheets y WhatsApp oficial. Antes de habilitarlo se debe demostrar en n8n 2.28.6: ejecución no solapada, lectura/escritura durable, serialización y mapeo de fechas, conciliación de resultados ambiguos, credenciales, plantillas, autorización, zona/horario y cleanup.
+El workflow RF-01 ya está implementado y versionado, con el núcleo integrado y una única ruta saliente mediante el coordinador HTTP/PostgreSQL. Permanece inactivo. Antes de habilitarlo se debe demostrar en el entorno: ejecución no solapada, lectura/proyección durable, serialización, conciliación, credenciales, plantillas, autorización, zona/horario y cleanup.
 
-La relectura previa al recordatorio reduce riesgo, pero no elimina la carrera entre última lectura y mensaje en vuelo. No se genera en este bloque un workflow aparentemente operativo.
+La relectura previa al recordatorio reduce riesgo, pero no elimina la carrera entre última lectura y mensaje en vuelo. El workflow RF-01 principal ya está implementado y versionado; permanece inactivo, con Schedule y envíos reales deshabilitados conforme al HANDOFF de LAB-RF-001.
 
 La ruta saliente preparada para integración usa una única llamada autenticada al coordinador HTTP v1. Solo una respuesta `200` con `outcome=accepted`, `state=accepted` y `acceptedAt` válido permite persistir `*_sent=true`; ese timestamp se normaliza a UTC. `202`, `409`, timeout, error de red, respuesta inválida o aceptación sin hora dejan la fase `*_ambiguous` y no actualizan banderas/timestamps de aceptación. El workflow no conserva una ruta directa alternativa hacia WhatsApp.

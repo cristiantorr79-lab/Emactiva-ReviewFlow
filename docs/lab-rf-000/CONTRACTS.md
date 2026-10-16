@@ -2,10 +2,14 @@
 
 Estado: CONTRATO DE DISEÑO; no implementado ni probado.
 
+> **Adenda vigente LAB-RF-002 — 2026-10-15.** Se conserva el contrato funcional original. En la arquitectura implementada por LAB-RF-001, las 19 columnas descritas abajo son el contrato de intercambio/proyección de `services`, no la autoridad operacional: PostgreSQL mantiene el estado y la versión autoritativos y Sheets recibe una proyección recuperable. `inbox_events` continúa en Google Sheets como integración de entrada conforme a este contrato; este ticket no migra su almacenamiento.
+
+Los contratos RF-01/RF-02 pertenecen a **SYSTEM**; sus mapeadores y adaptadores a **HYBRID**; documento, pestañas, base, credenciales y permisos a **ENVIRONMENT**. Por ello ni Google Sheets ni PostgreSQL son requisitos universales para futuros despliegues. Cualquier CRM, ERP o almacenamiento alternativo deberá implementar contratos compatibles y superar validaciones específicas; no se afirma compatibilidad ya probada.
+
 ## Identidad
 service_id: identificador estable y único por atención; no confundir con customer_id de persona. customer_id opcional según necesidad real. Un cliente puede tener múltiples atenciones.
 
-## Columnas propuestas para seguimiento en Google Sheets
+## Columnas del contrato `services` (proyección Google Sheets del piloto)
 service_id, customer_name, phone_e164, appointment_at, review_link, status, request_sent, request_sent_at, review_confirmed, review_confirmed_at, reminder_sent, reminder_sent_at, thanks_sent, thanks_sent_at, completed_at, completion_reason, operation_phase, error_code, updated_at.
 
 Ventana temporal de LISTO: evaluar `received_at` del evento autenticado contra `request_sent_at` de la atención; aceptar si `request_sent_at <= received_at <= request_sent_at + 7 días`. La fecha de ejecución de RF-01 no determina validez. Un evento previo al envío de solicitud no confirma esa solicitud. `received_at` debe provenir de marca temporal confiable del proveedor cuando exista y esté validada; si no es confiable, usar recepción del webhook en servidor y documentar la limitación. No usar hora suministrada libremente por el cliente. Si faltan fechas válidas, marcar evento para conciliación, no inferir.
@@ -18,7 +22,7 @@ Son datos mínimos propuestos, sujetos a minimización EPB y revisión de necesi
 
 ## RF-01
 Entrada: fila de atención con service_id único, teléfono válido, fecha de atención, enlace Google y autorización/condición de contacto verificada según canal y jurisdicción.
-RF-01 es el único escritor de estados de seguimiento y único emisor WhatsApp; procesa primero eventos pendientes de bandeja. Debe ejecutarse sin solapamiento demostrado.
+RF-01 es el único responsable funcional de las transiciones de seguimiento y el único originador de mensajes. En el piloto, el coordinador HTTP/PostgreSQL aplica las transiciones protegidas y ejecuta la ruta saliente; Sheets no autoriza transiciones por sí solo. RF-01 procesa primero eventos pendientes de bandeja y debe ejecutarse sin solapamiento demostrado.
 Elegibilidad de solicitud: pending, request_sent=false, ahora >= appointment_at + 2h, horario permitido, sin operación ambigua.
 Efecto: preparar checkpoint, llamar WhatsApp oficial con plantilla aprobada cuando aplique, persistir resultado confirmado; si incierto, bloquear reenvío y conciliar.
 Elegibilidad de recordatorio: solicitud confirmada, ahora >= request_sent_at + 12h, sin confirmación, reminder_sent=false, horario permitido, sin operación ambigua. Revalidar inmediatamente antes del efecto externo.

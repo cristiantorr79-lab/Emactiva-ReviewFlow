@@ -2,8 +2,18 @@
 
 Estado: DEFINICIÓN DOCUMENTAL; sin implementación.
 
+> **Adenda vigente LAB-RF-002 — 2026-10-15.** Este documento conserva el diseño original de LAB-RF-000. LAB-RF-001 evolucionó la implementación: PostgreSQL es la autoridad operacional para estados, versiones, concurrencia e idempotencia; Google Sheets es la integración del piloto para registrar atenciones, mantener `inbox_events` y recibir proyecciones recuperables; n8n orquesta; y el coordinador HTTP/PostgreSQL protege las operaciones y la única ruta saliente a WhatsApp. Las afirmaciones posteriores descritas como “propuesto”, “previsto” o basadas en Sheets como persistencia autoritativa son históricas, no el estado vigente.
+
+## Fronteras vigentes de portabilidad
+
+- **SYSTEM:** reglas RF-01/RF-02, contratos, invariantes, transiciones y minimización independientes del proveedor.
+- **HYBRID:** adaptadores de entrada, proyección y mensajería; mapeo Sheets; `inbox_events`; coordinador HTTP/PostgreSQL; integración n8n y webhook oficial.
+- **ENVIRONMENT:** credenciales, URLs, roles y base PostgreSQL, documento y permisos Sheets, despliegue n8n, Meta/BSP, TLS, horarios, zona, retención, backup y monitoreo.
+
+Google Sheets y PostgreSQL son elecciones del piloto v0.1, no dependencias universales del producto. Un CRM, ERP u otro sistema compatible podría sustituir o complementar adaptadores después de validación específica; no se declara que esas integraciones existan. Se reutiliza de LeadFlow el enfoque corporativo, no sus componentes ni decisiones particulares.
+
 ## Componentes
-- Google Sheets: fuente de servicios y seguimiento persistente por identificador único de atención.
+- Google Sheets: adaptador de entrada de atenciones y proyección recuperable del seguimiento utilizado en el piloto v0.1. No es la autoridad operacional ni una dependencia obligatoria del producto.
 - n8n RF-01: ejecución programada, selección de elegibles, validación, envío, seguimiento y recordatorio.
 - n8n RF-02: webhook WhatsApp oficial, autenticación y registro duradero de evento de respuesta en una pestaña de bandeja de entrada de Sheets. No envía agradecimientos ni modifica directamente el seguimiento.
 - Adaptador de mensajería configurable: proveedor oficial, credenciales y endpoints externos al repositorio.
@@ -39,7 +49,7 @@ No codificar dominios, IDs de Sheets, teléfonos, tokens ni enlaces particulares
 No implementar RF-01/RF-02 en LAB-RF-000. Sin CRM, POS, reservas, panel, IA, NFC/QR, verificación real de reseña ni multitenancy compleja.
 
 ## Lección LeadFlow
-Reutilizar metodología, contratos, tratamiento de resultados ambiguos y QA; no copiar PostgreSQL ni sus garantías a Sheets.
+Reutilizar metodología, contratos, tratamiento de resultados ambiguos y QA; no copiar componentes, infraestructura ni decisiones particulares de LeadFlow. La adopción posterior de PostgreSQL en ReviewFlow es una decisión propia y versionada de LAB-RF-001, no una dependencia heredada.
 
 ## Validación de diseño: bandeja y emisor único (LAB-RF-000)
 

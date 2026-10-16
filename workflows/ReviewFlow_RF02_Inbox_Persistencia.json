@@ -1,0 +1,408 @@
+{
+  "name": "ReviewFlow RF-02 — Persistencia inbox_events (inactivo)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rf02-inbox-events",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "rf02-webhook",
+      "name": "Internal authenticated webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        120
+      ],
+      "webhookId": "rf02-inbox-events-unconfigured"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body=$input.first().json.body??$input.first().json;const event=body?.event;if(body?.apiVersion!==\"v1\"||!event||!/^[A-Za-z0-9._:-]{1,200}$/.test(event.provider_event_id)||!/^\\+[1-9]\\d{7,14}$/.test(event.phone_e164)||event.event_type!==\"LISTO\"||event.processing_status!==\"pending\"||typeof event.received_at!==\"string\"||Number.isNaN(Date.parse(event.received_at)))throw new Error(\"INVALID_MINIMAL_EVENT\");const allowed=[\"provider_event_id\",\"phone_e164\",\"received_at\",\"event_type\",\"processing_status\"];if(Object.keys(event).some(k=>!allowed.includes(k)))throw new Error(\"UNEXPECTED_EVENT_FIELD\");return [{json:{...event}}];"
+      },
+      "id": "rf02-validate",
+      "name": "Validate minimal authenticated event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "rf02-read",
+      "name": "Read inbox_events for provider ID",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        480,
+        120
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const event=$(\"Validate minimal authenticated event\").first().json;const rows=$input.all().map(i=>i.json).filter(r=>r&&Object.keys(r).length);const matches=rows.filter(r=>r.provider_event_id===event.provider_event_id);if(matches.length>1)throw new Error(\"DUPLICATE_STATE_AMBIGUOUS\");if(matches.length===1){const x=matches[0];if(x.phone_e164!==event.phone_e164||x.received_at!==event.received_at||x.event_type!==\"LISTO\")throw new Error(\"DUPLICATE_ID_CONFLICT\");return [{json:{route:\"duplicate\",event}}];}return [{json:{route:\"append\",event}}];"
+      },
+      "id": "rf02-decide",
+      "name": "Classify new or duplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "append-route",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "append",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rf02-if",
+      "name": "Select append route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        940,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "provider_event_id": "={{ $json.event.provider_event_id }}",
+            "phone_e164": "={{ $json.event.phone_e164 }}",
+            "received_at": "={{ $json.event.received_at }}",
+            "event_type": "={{ $json.event.event_type }}",
+            "processing_status": "pending",
+            "service_id": ""
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "provider_event_id",
+              "displayName": "provider_event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone_e164",
+              "displayName": "phone_e164",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "event_type",
+              "displayName": "event_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "processing_status",
+              "displayName": "processing_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "service_id",
+              "displayName": "service_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "rf02-append",
+      "name": "Append pending event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "rf02-reread",
+      "name": "Reread inbox_events",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1380,
+        0
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const event=$(\"Select append route\").first().json.event;const rows=$input.all().map(i=>i.json).filter(r=>r&&Object.keys(r).length);const matches=rows.filter(r=>r.provider_event_id===event.provider_event_id);if(matches.length!==1)throw new Error(\"PERSISTENCE_NOT_CONFIRMED\");const x=matches[0];if(x.phone_e164!==event.phone_e164||x.received_at!==event.received_at||x.event_type!==\"LISTO\"||x.processing_status!==\"pending\")throw new Error(\"PERSISTENCE_MISMATCH\");return [{json:{apiVersion:\"v1\",status:\"persisted\",providerEventId:event.provider_event_id}}];"
+      },
+      "id": "rf02-verify",
+      "name": "Verify durable event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "respond-persisted",
+      "name": "Respond persisted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const event=$json.event;return [{json:{apiVersion:\"v1\",status:\"duplicate\",providerEventId:event.provider_event_id}}];"
+      },
+      "id": "rf02-duplicate",
+      "name": "Build duplicate response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "respond-duplicate",
+      "name": "Respond duplicate",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1520,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Internal authenticated webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate minimal authenticated event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate minimal authenticated event": {
+      "main": [
+        [
+          {
+            "node": "Read inbox_events for provider ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read inbox_events for provider ID": {
+      "main": [
+        [
+          {
+            "node": "Classify new or duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify new or duplicate": {
+      "main": [
+        [
+          {
+            "node": "Select append route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select append route": {
+      "main": [
+        [
+          {
+            "node": "Append pending event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build duplicate response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append pending event": {
+      "main": [
+        [
+          {
+            "node": "Reread inbox_events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reread inbox_events": {
+      "main": [
+        [
+          {
+            "node": "Verify durable event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify durable event": {
+      "main": [
+        [
+          {
+            "node": "Respond persisted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build duplicate response": {
+      "main": [
+        [
+          {
+            "node": "Respond duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {},
+  "versionId": "00000000-0000-4000-8000-000000000002",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

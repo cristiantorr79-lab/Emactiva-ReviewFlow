@@ -1,5 +1,11 @@
 # RF-01 principal — configuración y límites
 
+> **Estado vigente LAB-RF-002 — 2026-10-15.** El workflow versionado permanece inactivo. n8n orquesta; PostgreSQL es la autoridad operacional; Sheets aporta atenciones, conserva `inbox_events` y recibe proyecciones; el coordinador HTTP/PostgreSQL protege las transiciones y es la única ruta saliente a WhatsApp. Schedule y envíos Meta reales continúan deshabilitados.
+
+Las instrucciones anteriores a **“Ruta saliente mediante coordinador HTTP”** y toda referencia posterior a configurar o conservar un nodo directo **WhatsApp Business Cloud API** son evidencia histórica y quedan sustituidas por la ruta única `RF-01 Coordinator HTTP`. No deben ejecutarse ni usarse para reconstruir el workflow vigente. La configuración del proveedor Meta pertenece al entorno del coordinador, no al workflow n8n.
+
+Clasificación EDPB: reglas y contratos RF-01 son **SYSTEM**; nodos, mapeos Sheets y cliente del coordinador son **HYBRID**; credenciales, URLs, documentos, GID, cron, zona, PostgreSQL, Meta y despliegue son **ENVIRONMENT**. Estas elecciones describen v0.1 y no impiden adaptadores futuros validados.
+
 Artefacto: `workflows/ReviewFlow_RF01_Principal_actual.json`. El nombre interno definitivo es **ReviewFlow — RF-01 — Principal**. Se mantiene `active=false`.
 
 ## Validación integrada CA05–CA08
@@ -34,13 +40,13 @@ La configuración local del planificador contiene `coordinator.apiVersion="v1"`,
 
 El request contiene identidad técnica estable y los datos mínimos que el servicio necesita para generar la plantilla. El servicio es el único componente que contacta Meta. El workflow solo marca una salida enviada ante `200/accepted/accepted` con `acceptedAt` válido. `202 uncertain`, `409 blocked`, `422 rejected`, timeout, error de red o cuerpo inválido conservan todas las banderas `*_sent=false`, dejan `operation_phase=<kind>_ambiguous` y requieren conciliación. El nodo HTTP tiene `neverError`, timeout explícito y ambas salidas convergen en **Classify coordinator result**; n8n no reintenta automáticamente.
 
-### Aplicación controlada sin perder Sheets
+### Antecedente histórico: migración visual al coordinador (no ejecutar como procedimiento vigente)
 
 No importar el JSON sobre el workflow configurado sin un respaldo exportado: n8n no ofrece aquí una garantía de merge por ID que preserve configuración visual. Para actualizar el workflow existente, editar visualmente solo:
 
 1. **Plan one safe RF-01 command**: reemplazar su `jsCode` por el generado y configurar `coordinator.baseUrl` únicamente con el HTTPS del servicio; mantener cuatro gates en `false`.
 2. **Revalidate and prepare checkpoint** y **Classify WhatsApp result**: sustituir sus `jsCode` por los generados; renombrar el segundo a **Classify coordinator result**.
-3. Nodo ID `wa`: renombrar **WhatsApp Business Cloud API** a **RF-01 Coordinator HTTP**, copiar URL/body/timeout/opciones del JSON y seleccionar la credencial nueva del coordinador.
+3. **Estado vigente:** el nodo ID `wa` corresponde a **RF-01 Coordinator HTTP**. Verificar su configuración contra el JSON versionado; no reconstruir la antigua conexión directa a Meta.
 4. Confirmar que la conexión es `Verify checkpoint persisted → RF-01 Coordinator HTTP → Classify coordinator result → Persist final outgoing state` y que no queda ningún nodo apuntando a `graph.facebook.com`.
 
 Al actualizar visualmente deben conservarse documentos, pestañas y credenciales de las lecturas y de los tres `Update Row` restantes. Ambos nodos HTTP usan la misma credencial externa. Guardar con Schedule y las cuatro compuertas deshabilitados; validar primero con proveedor simulado.
@@ -48,8 +54,8 @@ Al actualizar visualmente deben conservarse documentos, pestañas y credenciales
 ## Configuración visual
 
 1. Seleccionar credencial, documento y pestaña en todos los nodos Google Sheets 4.7. Usar `services` o `inbox_events` según el nombre del nodo; los GID no se incorporan al repositorio.
-2. En **WhatsApp Business Cloud API**, seleccionar una credencial HTTP Header Auth externa con el bearer token oficial. No ejecutar todavía.
-3. En **Plan one safe RF-01 command**, buscar `const localConfig=` y configurar la ventana (inicial 7), zona, horario, IDs autorizados y metadatos no secretos de WhatsApp. Esta configuración pertenece al workflow y no depende de `$vars`. El token sigue exclusivamente en la credencial HTTP Header Auth.
+2. **Procedimiento histórico sustituido:** no configurar credenciales Meta en n8n. La ruta vigente usa una credencial HTTP Header Auth para el coordinador; Meta se configura exclusivamente en el entorno del coordinador. No ejecutar todavía.
+3. En **Plan one safe RF-01 command**, buscar `const localConfig=` y configurar la ventana (inicial 7), zona, horario, IDs autorizados y metadatos no secretos de WhatsApp. Esta configuración pertenece al workflow y no depende de `$vars`. La credencial HTTP Header Auth de n8n contiene exclusivamente la autenticación del coordinador. El token oficial de Meta permanece fuera de n8n, en la configuración segura del servicio coordinador.
 4. Mantener en `false` `criticalConfigPresent`, `exclusiveExecutionVerified`, `sheetsWriteEnabled` y `sendEnabled`. El Schedule Trigger también está deshabilitado. Su cron portable es un placeholder cada 15 minutos y debe ajustarse visualmente antes de cualquier activación.
 
 ## Orden implementado
@@ -66,7 +72,7 @@ La separación de modos sí es interna: el planificador comprueba cuál de los d
 
 La documentación oficial de n8n describe `N8N_CONCURRENCY_PRODUCTION_LIMIT` como límite global de ejecuciones de producción, no como mutex por workflow, y excluye expresamente las ejecuciones manuales. Aplicarlo requeriría modificar infraestructura compartida y no cubriría CA09. No se implementa un lock en Sheets. La exclusión del ciclo continúa bloqueada y, por tanto, también escrituras y WhatsApp.
 
-### Aplicación sobre la importación existente
+### Antecedente histórico: ajustes sobre la importación inicial
 
 No reimportar el JSON completo sobre la copia ya configurada: no hay evidencia de que n8n 2.28.6 fusione el JSON por ID conservando todos los campos visuales. Mantener los nodos Google Sheets y WhatsApp existentes. En edición visual:
 
@@ -87,7 +93,7 @@ Aplicación mínima sobre el workflow ya configurado:
 
 1. En **Plan one safe RF-01 command**, reemplazar solo `jsCode` por el del nodo homónimo del JSON generado. Dentro de `const localConfig`, rellenar exclusivamente `wa.businessName` con el nombre exacto del negocio. Mantener las cuatro compuertas en `false`.
 2. En **Revalidate and prepare checkpoint**, reemplazar solo `jsCode` por el del nodo homónimo del JSON generado; este contiene el constructor único de `template.components`.
-3. No abrir ni modificar los nodos Google Sheets o **WhatsApp Business Cloud API**; así se conservan selectores, mappings y credencial. Mantener Schedule deshabilitado y no ejecutar la rama operativa.
+3. No abrir ni modificar los nodos Google Sheets o **RF-01 Coordinator HTTP**; así se conservan selectores, mappings y credencial. Mantener Schedule deshabilitado y no ejecutar la rama operativa.
 
 La UI de n8n no admite un parche parcial verificable por ID. Estos dos reemplazos visuales son necesarios para conservar la configuración ya aplicada; no reimportar el workflow completo.
 
