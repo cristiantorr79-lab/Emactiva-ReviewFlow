@@ -226,7 +226,14 @@ const connections={
  "Filter confirmation projection":{main:[[{node:"Persist confirmation",type:"main",index:0}]]},"Persist confirmation":{main:[[{node:"Reread confirmed service",type:"main",index:0}]]},"Reread confirmed service":{main:[[{node:"Verify confirmation persisted",type:"main",index:0}]]},"Verify confirmation persisted":{main:[[{node:"Persist processed event",type:"main",index:0}]]},"Persist processed event":{main:[[{node:"Reread processed event",type:"main",index:0}]]},"Reread processed event":{main:[[{node:"Verify event persisted",type:"main",index:0}]]},
  "Filter outgoing projection":{main:[[{node:"Persist final outgoing state",type:"main",index:0}]]},"Persist final outgoing state":{main:[[{node:"Reread final outgoing state",type:"main",index:0}]]},"Reread final outgoing state":{main:[[{node:"Verify final state",type:"main",index:0}]]},
 };
-const generatedWorkflow={name:"ReviewFlow — RF-01 — Principal",nodes,connections,active:false,pinData:{},settings:{executionOrder:"v1"},tags:[]};
+const privacySafeExecutionSettings={
+ executionOrder:"v1",
+ saveDataErrorExecution:"none",
+ saveDataSuccessExecution:"none",
+ saveManualExecutions:false,
+ saveExecutionProgress:false,
+};
+const generatedWorkflow={name:"ReviewFlow — RF-01 — Principal",nodes,connections,active:false,pinData:{},settings:privacySafeExecutionSettings,tags:[]};
 const authority=JSON.parse(await readFile(outputPath,"utf8"));
 if(authority.name!==generatedWorkflow.name||authority.nodes.length!==37)throw new Error("Current workflow authority identity is invalid");
 const generatedByName=new Map(generatedWorkflow.nodes.map(node=>[node.name,node]));
@@ -240,12 +247,13 @@ const synchronizedNodes=authority.nodes.map(current=>{
 });
 const synchronizedConnections=structuredClone(authority.connections);
 synchronizedConnections["RF-01 Coordinator HTTP"]=generatedWorkflow.connections["RF-01 Coordinator HTTP"];
-const workflow={...authority,nodes:synchronizedNodes,connections:synchronizedConnections,active:false};
+const workflow={...authority,nodes:synchronizedNodes,connections:synchronizedConnections,active:false,settings:{...authority.settings,...privacySafeExecutionSettings}};
 const serialized=`${JSON.stringify(workflow,null,2)}\n`;
 
 if(process.argv.includes("--check")){
  const existing=await readFile(outputPath,"utf8");if(existing!==serialized)throw new Error("Main workflow out of sync");const parsed=JSON.parse(existing);
  if(parsed.active!==false||!parsed.nodes.some(n=>n.type==="n8n-nodes-base.scheduleTrigger"&&n.disabled===true))throw new Error("Schedule safety invalid");
+ for(const [key,value] of Object.entries({saveDataErrorExecution:"none",saveDataSuccessExecution:"none",saveManualExecutions:false,saveExecutionProgress:false}))if(parsed.settings?.[key]!==value)throw new Error(`Unsafe execution retention setting: ${key}`);
  if(parsed.nodes.some(n=>JSON.stringify(n).includes("Bearer synthetic-secret")||n.parameters?.headerParameters?.parameters?.some(h=>String(h.name).toLowerCase()==="authorization")))throw new Error("Embedded authentication material");
  const updates=parsed.nodes.filter(n=>n.type==="n8n-nodes-base.googleSheets"&&n.parameters.operation==="update");if(updates.length!==3)throw new Error("Expected three projection/event update stages");
  const expectedUpdates={
