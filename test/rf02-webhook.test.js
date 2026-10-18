@@ -7,6 +7,10 @@ import { createRf02InboxHttpAdapter } from "../src/rf02-inbox-http-adapter.js";
 const appSecret = "synthetic-meta-app-secret-32-characters";
 const verifyToken = "synthetic-meta-verify-token-32-chars";
 const payload = (body = " LISTO ", overrides = {}) => ({ object: "whatsapp_business_account", entry: [{ changes: [{ field: "messages", value: { messages: [{ id: "wamid.synthetic-1", from: "12025550101", timestamp: "1792112400", type: "text", text: { body }, ...overrides }] } }] }] });
+const batchPayload = () => ({ object: "whatsapp_business_account", entry: [{ changes: [{ field: "messages", value: { messages: [
+  { id: "wamid.synthetic-batch-a", from: "12025550101", timestamp: "1792112400", type: "text", text: { body: "LISTO" } },
+  { id: "wamid.synthetic-batch-b", from: "12025550102", timestamp: "1792112401", type: "text", text: { body: "LISTO" } },
+] } }] }] });
 const signed = value => { const rawBody=Buffer.from(JSON.stringify(value)); return { method:"POST",path:"/webhooks/whatsapp",rawBody,signature:`sha256=${createHmac("sha256",appSecret).update(rawBody).digest("hex")}` }; };
 const setup = persistEvent => { const logs=[]; return { logs, handler:createRf02WebhookHandler({appSecret,verifyToken,persistEvent:persistEvent??(async()=>({status:"persisted"})),logger:event=>logs.push(event)})}; };
 
@@ -40,6 +44,41 @@ test("normalization accepts only complete text LISTO and ignores unknown events"
 test("confirmed duplicate succeeds, but failed or ambiguous persistence requests redelivery", async () => {
   for(const [status,expected] of [["duplicate",200],["failed",503],["ambiguous",503]]) { const {handler}=setup(async()=>({status})); assert.equal((await handler(signed(payload()))).status,expected); }
   const {handler}=setup(async()=>{throw new Error("uncertain write")}); assert.equal((await handler(signed(payload()))).status,503);
+});
+
+test("partial LISTO batch recovers idempotently when the complete payload is redelivered", async () => {
+  const persisted = new Set();
+  const calls = [];
+  let failSecondOnce = true;
+  const { handler, logs } = setup(async event => {
+    calls.push(event.provider_event_id);
+    if (event.provider_event_id === "wamid.synthetic-batch-b" && failSecondOnce) {
+      failSecondOnce = false;
+      return { status: "ambiguous" };
+    }
+    if (persisted.has(event.provider_event_id)) return { status: "duplicate" };
+    persisted.add(event.provider_event_id);
+    return { status: "persisted" };
+  });
+  const request = signed(batchPayload());
+
+  const first = await handler(request);
+  assert.equal(first.status, 503);
+  assert.deepEqual([...persisted], ["wamid.synthetic-batch-a"]);
+
+  const redelivery = await handler(request);
+  assert.equal(redelivery.status, 200);
+  assert.deepEqual(JSON.parse(redelivery.body), { outcome: "accepted", code: "EVENTS_PERSISTED", count: 2 });
+  assert.deepEqual([...persisted], ["wamid.synthetic-batch-a", "wamid.synthetic-batch-b"]);
+  assert.deepEqual(calls, [
+    "wamid.synthetic-batch-a", "wamid.synthetic-batch-b",
+    "wamid.synthetic-batch-a", "wamid.synthetic-batch-b",
+  ]);
+  assert.equal(calls.filter(id => id === "wamid.synthetic-batch-a").length, 2);
+  assert.equal(calls.filter(id => id === "wamid.synthetic-batch-b").length, 2);
+  assert.equal(logs.filter(entry => entry.event === "rf02_persistence_blocked").length, 1);
+  assert.equal(logs.filter(entry => entry.event === "rf02_webhook_completed").length, 1);
+  assert.doesNotMatch(JSON.stringify(logs), /1202555010[12]|wamid\.synthetic-batch|LISTO/);
 });
 
 test("inbox HTTP adapter accepts only a confirmed matching persistence response", async () => {

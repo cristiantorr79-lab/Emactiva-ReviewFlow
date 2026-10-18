@@ -25,3 +25,23 @@ El principio de portabilidad es **“cambia el entorno, no el sistema”**: regl
 **Advertencia:** no se declara entrega exactamente una vez. La ejecución manual/Schedule solapada, los casos CA06 ambiguos o fuera de ventana en n8n, la operación programada y Meta real permanecen `NOT_VERIFIED`; no deben habilitarse antes de resolver las condiciones registradas en el HANDOFF.
 
 Los documentos de LAB-RF-000 y su evidencia de cierre están en `docs/lab-rf-000/`. Este cierre documental no acredita PASS funcional.
+
+## Roadmap aprobado
+
+El orden vigente desde el sistema ya implementado hasta el gate comercial es:
+
+1. **LAB-RF-003 — QA integrado, privacidad y hardening:** consolidar RF-01/RF-02, cerrar brechas SYSTEM/HYBRID verificables y delimitar pendientes de entorno.
+2. **LAB-RF-004 — Validación visual y funcional en n8n:** validar las superficies visuales y de runtime que no acredita el gate local.
+3. **LAB-RF-005 — Preparación comercial-operativa:** definir la operación repetible sin alterar el producto.
+4. **LAB-RF-006 — Implementación remota y despliegue en clientes:** preparar y validar el modelo de deployment.
+5. **LAB-RF-007 — Piloto técnico de implementación real:** comprobar el deployment y la operación técnica en un entorno autorizado.
+6. **LAB-RF-008 — Estabilización post-piloto técnico (CONDICIONAL):** ejecutar solo si RF-007 descubre defectos, regresiones o brechas que requieran cambios; en caso contrario, clasificar `N/A` con evidencia.
+7. **LAB-RF-009 — Demo comercial final:** representar el producto estabilizado con datos sintéticos y claims demostrados.
+8. **LAB-RF-010 — Alineación y consolidación documental:** alinear setup, arquitectura, contratos y runbooks con el sistema validado.
+9. **LAB-RF-011 — Privacidad operacional, retención y derechos:** validar controles integrales sobre las superficies y proveedores efectivos.
+10. **LAB-RF-012 — Packaging comercial final:** consolidar el material técnico-comercial sin claims no verificados.
+11. **LAB-RF-013 — Oferta, pricing y condiciones:** definir costos, modalidades, inclusiones y responsabilidades.
+12. **LAB-RF-014 — Piloto comercial controlado:** evaluar el servicio completo con un negocio y destinatarios autorizados.
+13. **LAB-RF-015 — Commercial Readiness Gate:** decidir `COMMERCIAL READY` o `NOT READY` con evidencia consolidada.
+
+Cada LAB conserva sus propios criterios y HANDOFF. Este roadmap no adelanta gates ni convierte pendientes PILOT/PRODUCTION en PASS.

@@ -124,6 +124,21 @@ test("failure after confirmation before event processed preserves confirmation o
   assert.equal(out.services[0].thanks_sent, true);
 });
 
+test("pending LISTO is reprocessed after interruption without repeating confirmation or thanks", async () => {
+  const interrupted = await run({ services: [sentService()], events: [event()], options: { failEventWriteAt: 1 } });
+  assert.equal(interrupted.services[0].review_confirmed, true);
+  assert.equal(interrupted.services[0].thanks_sent, true);
+  assert.equal(interrupted.inboxEvents[0].processing_status, "pending");
+
+  const recovered = await run({ services: interrupted.services, events: interrupted.inboxEvents });
+  assert.equal(recovered.inboxEvents[0].processing_status, "processed");
+  assert.equal(recovered.inboxEvents[0].service_id, "svc-1");
+  assert.equal(recovered.calls.filter(call => call[0] === "persistService").length, 0);
+  assert.equal(recovered.calls.filter(call => call[0] === "send").length, 0);
+  assert.equal(recovered.calls.filter(call => call[0] === "persistEvent").length, 1);
+  assert.deepEqual(recovered.results.events, [{ provider_event_id: "evt-1", result: "processed", service_id: "svc-1" }]);
+});
+
 test("failed checkpoint prevents send; residual prepared and restart also prevent blind resend", async () => {
   const failed = await run({ options: { failServiceWriteAt: 1 } });
   assert.equal(failed.calls.filter(c => c[0] === "send").length, 0);
