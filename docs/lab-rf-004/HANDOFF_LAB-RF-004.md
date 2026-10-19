@@ -37,7 +37,7 @@ Issue: #5 — LAB-RF-004
 ### Validaciones HTTP
 
 - Coordinador local utilizado con proveedor `simulated`; no se invocó Meta ni un emisor externo.
-- Solicitud sintética y recordatorio sintético recorrieron el contrato HTTP y dejaron estado y operaciones verificables en PostgreSQL.
+- Solicitud, confirmación y agradecimiento sintéticos recorrieron el contrato HTTP del coordinador y dejaron estado y operaciones verificables en PostgreSQL. El recordatorio se validó mediante pruebas automatizadas; no se ejecutó como operación HTTP manual.
 - Autenticación, versión esperada, proyección autoritativa y bloqueo conservador forman parte del alcance probado.
 - El cleanup posterior confirmó la eliminación de los dos servicios sintéticos y sus operaciones/transiciones relacionadas.
 - Estas validaciones no prueban entrega al destinatario, TLS público ni disponibilidad tras un reinicio.
@@ -77,7 +77,7 @@ La política evalúa la hora mediante `Intl.DateTimeFormat` con la zona configur
 | --- | --- | --- |
 | PostgreSQL ReviewFlow | Servicio/contenedor local aislado | Puerto interno PostgreSQL habitual `5432`; nombre de contenedor y binding del host **NOT_VERIFIED** en el repositorio. Usar el DSN operativo verificado, no inferir el mapping. |
 | n8n | Instancia local existente, normalmente en contenedor | Nombre de contenedor y puerto publicado **NOT_VERIFIED** en el repositorio. Recuperarlos desde la configuración efectiva de Docker, sin crear otra instancia. |
-| Coordinador RF-01 | Proceso Node en el host | El workflow piloto apunta a `http://host.docker.internal:18787`; iniciar el coordinador en el host con puerto `18787`. El default del runtime es `8787`, por lo que el override es necesario para este piloto. |
+| Coordinador RF-01 | Proceso Node en el host | El coordinador fue probado durante LAB-RF-004 en `127.0.0.1:8787`. El workflow exportado apunta a `http://host.docker.internal:18787`; la conectividad efectiva n8n → coordinador en `18787` permanece **NOT_VERIFIED**. |
 | Google Sheets | Credencial OAuth administrada por n8n | Sin puerto local. La referencia de credencial permanece en el workflow; puede requerir reconexión OAuth. |
 | WhatsApp | Proveedor simulado para este LAB | Sin conexión real. Mantener `RF01_PROVIDER_MODE=simulated` y `RF01_ALLOW_REAL_WHATSAPP=NO`. |
 
@@ -88,9 +88,11 @@ La política evalúa la hora mediante `Intl.DateTimeFormat` con la zona configur
 3. Iniciar la instancia existente de n8n y comprobar que el workflow RF-01 continúa inactivo.
 4. Abrir una PowerShell nueva en la raíz del repositorio. Las variables definidas en una sesión anterior no sobreviven al reinicio ni aparecen automáticamente en una consola nueva.
 5. Cargar `RF01_DATABASE_URL` y `RF01_COORDINATOR_SERVICE_TOKEN` desde sus ubicaciones autorizadas sin imprimirlos. Configurar el proveedor simulado, host y puerto del piloto.
-6. Ejecutar `npm run start:coordinator` y confirmar que escucha en `127.0.0.1:18787` sin errores de conexión PostgreSQL.
+6. Ejecutar `npm run start:coordinator` en `127.0.0.1:8787`, que es el puerto probado durante LAB-RF-004, y confirmar que inicia sin errores de conexión PostgreSQL.
 7. Desde n8n, comprobar la referencia **ReviewFlow — Coordinator HTTP** y la credencial Google Sheets. Si OAuth expiró, reconectar la misma credencial; no crear credenciales duplicadas salvo decisión operativa explícita.
 8. Verificar lectura de Sheets con una operación no destructiva. No activar Schedule ni abrir los gates para esta comprobación.
+
+El workflow actualmente versionado conserva `host.docker.internal:18787`. Antes de usar esa ruta desde n8n se debe alinear el puerto del proceso o la configuración ambiental mediante el procedimiento autorizado y verificar conectividad. LAB-RF-004 no acreditó conectividad en `18787`.
 
 Ejemplo de preparación de la sesión, deliberadamente sin valores secretos:
 
@@ -100,7 +102,7 @@ $env:RF01_COORDINATOR_SERVICE_TOKEN = "<obtener desde la ubicación autorizada>"
 $env:RF01_PROVIDER_MODE = "simulated"
 $env:RF01_ALLOW_REAL_WHATSAPP = "NO"
 $env:RF01_COORDINATOR_HOST = "127.0.0.1"
-$env:RF01_COORDINATOR_PORT = "18787"
+$env:RF01_COORDINATOR_PORT = "8787"
 npm run start:coordinator
 ```
 
@@ -113,7 +115,7 @@ npm run start:coordinator
 | `RF01_PROVIDER_MODE` | Selección del proveedor | `simulated` para LAB-RF-004. |
 | `RF01_ALLOW_REAL_WHATSAPP` | Gate explícito para proveedor real | `NO` para LAB-RF-004. |
 | `RF01_COORDINATOR_HOST` | Interfaz del servicio | `127.0.0.1` en el host local. |
-| `RF01_COORDINATOR_PORT` | Puerto del coordinador | `18787` para coincidir con el workflow importado. |
+| `RF01_COORDINATOR_PORT` | Puerto del coordinador | `8787` fue probado en LAB-RF-004. El workflow exportado configura `18787`, cuya conectividad permanece **NOT_VERIFIED**. |
 | `RF01_DB_POOL_MAX` | Tamaño del pool PostgreSQL | Opcional; default local `4`. |
 | `RF01_PROVIDER_TIMEOUT_MS` | Timeout del proveedor | Opcional; default local `15000`. |
 | `RF01_SIMULATED_DELAY_MS` | Demora controlada del simulador | Opcional; `0` salvo una prueba expresamente autorizada. |
@@ -130,18 +132,18 @@ Las variables `RF01_WA_ACCESS_TOKEN`, `RF01_WA_PHONE_NUMBER_ID`, `RF01_WA_API_VE
 
 Bitwarden fue adoptado recientemente. Para la recuperación de ReviewFlow se registran tres referencias, sin reproducir sus valores:
 
-1. **ReviewFlow — PostgreSQL**: referencia para `RF01_DATABASE_URL`.
-2. **ReviewFlow — Coordinator HTTP**: referencia para `RF01_COORDINATOR_SERVICE_TOKEN` y la credencial homónima de n8n.
-3. **ReviewFlow — RF-02 Inbox Auth**: referencia para `RF02_INBOX_SERVICE_TOKEN` y el Header Auth del Webhook interno.
+1. **Emactiva — ReviewFlow — PostgreSQL RF-01**: referencia para `RF01_DATABASE_URL`.
+2. **Emactiva — ReviewFlow — RF-01 Coordinator Token**: referencia para `RF01_COORDINATOR_SERVICE_TOKEN` y la credencial HTTP correspondiente de n8n.
+3. **Emactiva — ReviewFlow — RF-02 Inbox Token**: referencia para `RF02_INBOX_SERVICE_TOKEN` y el Header Auth del Webhook interno.
 
 Estas referencias no incluyen Google Sheets OAuth, que permanece administrado por n8n. No se debe inferir que Bitwarden contiene otras credenciales no enumeradas.
 
 Referencias seguras verificadas:
 
 - Google Sheets OAuth se administra mediante la credencial referenciada en n8n; este repositorio no contiene su token.
-- El bearer del coordinador se referencia mediante la credencial n8n **ReviewFlow — Coordinator HTTP** y la referencia homónima de Bitwarden.
-- El bearer interno de RF-02 se referencia mediante la credencial n8n **ReviewFlow — RF-02 Inbox Auth** y la referencia homónima de Bitwarden. Debe coincidir con `RF02_INBOX_SERVICE_TOKEN`; no se comparte con el coordinador RF-01.
-- El DSN PostgreSQL se recupera desde la referencia **ReviewFlow — PostgreSQL**. En Git solo existe el nombre de variable vacío en `config/rf01-coordinator.env.example`.
+- El bearer del coordinador se referencia mediante la credencial n8n **ReviewFlow — Coordinator HTTP** y la entrada Bitwarden **Emactiva — ReviewFlow — RF-01 Coordinator Token**.
+- El bearer interno de RF-02 se referencia mediante la credencial n8n **ReviewFlow — RF-02 Inbox Auth** y la entrada Bitwarden **Emactiva — ReviewFlow — RF-02 Inbox Token**. Debe coincidir con `RF02_INBOX_SERVICE_TOKEN`; no se comparte con el coordinador RF-01.
+- El DSN PostgreSQL se recupera desde la entrada Bitwarden **Emactiva — ReviewFlow — PostgreSQL RF-01**. En Git solo existe el nombre de variable vacío en `config/rf01-coordinator.env.example`.
 
 Nunca copiar contraseñas, tokens, cookies OAuth ni cadenas de conexión completas al HANDOFF, consola compartida, capturas, historial Git o datos de ejecución de n8n.
 
