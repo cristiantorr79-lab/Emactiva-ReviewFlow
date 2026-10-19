@@ -7,7 +7,9 @@ import { runInNewContext } from "node:vm";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const corePath = resolve(root, "src/rf01-core.js");
 const outputPath = resolve(root, "workflows/ReviewFlow_RF01_Principal_actual.json");
+const localConfigPath = resolve(root, "config/rf01-pilot.local.json");
 const coreSource = await readFile(corePath, "utf8");
+const pilotLocalConfig = JSON.parse(await readFile(localConfigPath, "utf8"));
 const coreHash = createHash("sha256").update(coreSource).digest("hex");
 const core = coreSource.replace(/\bexport\s+/g, "").trim();
 
@@ -15,9 +17,9 @@ const core = coreSource.replace(/\bexport\s+/g, "").trim();
 // secrets remain in credentials. Safety gates intentionally default to false.
 const RF01_LOCAL_CONFIG = Object.freeze({
   confirmationWindowDays: 7,
-  timezone: "",
-  allowedStart: "",
-  allowedEnd: "",
+  timezone: pilotLocalConfig.timezone,
+  allowedStart: pilotLocalConfig.allowedStart,
+  allowedEnd: pilotLocalConfig.allowedEnd,
   criticalConfigPresent: false,
   exclusiveExecutionVerified: false,
   sheetsWriteEnabled: false,
@@ -280,6 +282,7 @@ if(process.argv.includes("--check")){
  if(existing.includes("graph.facebook.com")||existing.includes("whatsapp_payload")||parsed.nodes.some(n=>n.name==="WhatsApp Business Cloud API"))throw new Error("Direct WhatsApp route remains");
  const runPlanner=async(services,events,mode="manual")=>{const ctx={__items:[{json:{source:"services",rows:services}},{json:{source:"inbox_events",rows:events}}],$:triggerLookup(mode),$execution:{id:"synthetic-execution"},Intl};return (await runInNewContext(wrapped,ctx))[0].json;};
  const runPlannerConfigured=async(config,mode="manual",services=[],events=[])=>{const configuredCode=plannerCode.replace(JSON.stringify(RF01_WORKFLOW_CONFIG),JSON.stringify(config));const ctx={__items:[{json:{source:"services",rows:services}},{json:{source:"inbox_events",rows:events}}],$:triggerLookup(mode),$execution:{id:"synthetic-execution"},Intl};return (await runInNewContext(`const $input={all:()=>__items};(async()=>{${configuredCode}})()`,ctx))[0].json;};
+ const operativeGatesClosed=plan=>["exclusive_execution","sheets_write","send","critical_config","contact_authorized"].every(key=>plan.gates[key]===false);
  const withCoordinator=coordinator=>({...RF01_LOCAL_CONFIG,coordinator:{...RF01_LOCAL_CONFIG.coordinator,...coordinator}});
  if(!(await runPlannerConfigured(withCoordinator({baseUrl:"https://coordinator.example.test"}))).coordinator.urlAllowed)throw new Error("HTTPS coordinator rejected");
  const localTest=withCoordinator({baseUrl:"http://host.docker.internal:18787",testMode:true,providerMode:"simulated"});
@@ -295,10 +298,10 @@ if(process.argv.includes("--check")){
  ])if((await runPlannerConfigured(invalid)).coordinator.urlAllowed)throw new Error("Unsafe local HTTP accepted");
  if((await runPlannerConfigured(localTest,"scheduled")).coordinator.urlAllowed)throw new Error("Scheduled HTTP accepted");
  const requestPlan=await runPlannerConfigured(RF01_LOCAL_CONFIG,"manual",[baseService]);if(requestPlan.command?.kind!=="request"||requestPlan.execution_authorized!==false)throw new Error("Request planning/gate regression");
- if(requestPlan.execution_mode!=="manual_test"||Object.values(requestPlan.gates).some(Boolean))throw new Error("Manual execution is not read-only");
+ if(requestPlan.execution_mode!=="manual_test"||!operativeGatesClosed(requestPlan))throw new Error("Manual execution is not read-only");
  const scheduledPlan=await runPlannerConfigured(RF01_LOCAL_CONFIG,"scheduled",[baseService]);if(scheduledPlan.execution_mode!=="scheduled_operational"||scheduledPlan.execution_authorized!==false||scheduledPlan.gates.exclusive_execution!==false)throw new Error("Scheduled execution safety regression");
  const ca09Service={...baseService,service_id:"synthetic-ca09-service-1"};const ca09Config={...localTest,ca09Test:{enabled:true,serviceId:ca09Service.service_id,operationKind:"request"}};
- const ca09Plan=await runPlannerConfigured(ca09Config,"manual",[ca09Service]);if(!ca09Plan.execution_authorized||!ca09Plan.ca09_test_authorized||Object.values(ca09Plan.gates).some(Boolean))throw new Error("CA09 safe test route rejected or opened a gate");
+ const ca09Plan=await runPlannerConfigured(ca09Config,"manual",[ca09Service]);if(!ca09Plan.execution_authorized||!ca09Plan.ca09_test_authorized||!operativeGatesClosed(ca09Plan))throw new Error("CA09 safe test route rejected or opened a gate");
  for(const invalid of [{...ca09Config,ca09Test:{...ca09Config.ca09Test,serviceId:"service-1"}},{...ca09Config,ca09Test:{...ca09Config.ca09Test,enabled:false}}])if((await runPlannerConfigured(invalid,"manual",[ca09Service])).execution_authorized)throw new Error("Unsafe CA09 test configuration accepted");
  if((await runPlannerConfigured(ca09Config,"scheduled",[ca09Service])).ca09_test_authorized)throw new Error("Scheduled CA09 test accepted");
  const integratedConfig={...localTest,integratedTest:RF01_WORKFLOW_CONFIG.integratedTest};
@@ -306,7 +309,7 @@ if(process.argv.includes("--check")){
  const listoEvent={provider_event_id:"synthetic-ca05-event-1",phone_e164:listoService.phone_e164,received_at:"2026-10-11T12:00:00Z",event_type:"LISTO",processing_status:"pending",service_id:null};
  const reminderService={...baseService,service_id:"synthetic-ca07-reminder-1",phone_e164:"+12025550107",status:"request_sent",request_sent:true,request_sent_at:"2020-01-01T12:00:00Z"};
  const thanksService={...baseService,service_id:"synthetic-ca08-thanks-1",phone_e164:"+12025550108",status:"confirmed",request_sent:true,request_sent_at:"2020-01-01T12:00:00Z",review_confirmed:true,review_confirmed_at:"2020-01-02T12:00:00Z"};
- for(const [expected,services,events] of [["confirm",[listoService],[listoEvent]],["reminder",[reminderService],[]],["thanks",[thanksService],[]]]){const plan=await runPlannerConfigured(integratedConfig,"manual",services,events);if(plan.command?.kind!==expected||!plan.execution_authorized||!plan.integrated_test_authorized||Object.values(plan.gates).some(Boolean))throw new Error(`Integrated synthetic ${expected} route rejected or opened a production gate`);}
+ for(const [expected,services,events] of [["confirm",[listoService],[listoEvent]],["reminder",[reminderService],[]],["thanks",[thanksService],[]]]){const plan=await runPlannerConfigured(integratedConfig,"manual",services,events);if(plan.command?.kind!==expected||!plan.execution_authorized||!plan.integrated_test_authorized||!operativeGatesClosed(plan))throw new Error(`Integrated synthetic ${expected} route rejected or opened a production gate`);}
  const outsider=await runPlannerConfigured(integratedConfig,"manual",[baseService],[]);if(outsider.command!==null||outsider.execution_authorized)throw new Error("Non-synthetic service entered integrated test scope");
  const scheduledIntegrated=await runPlannerConfigured(integratedConfig,"scheduled",[reminderService],[]);if(scheduledIntegrated.integrated_test_authorized||scheduledIntegrated.execution_authorized)throw new Error("Scheduled integrated test accepted");
  const residualPlan=await runPlannerConfigured(RF01_LOCAL_CONFIG,"manual",[{...baseService,operation_phase:"request_prepared"}]);if(residualPlan.command!==null)throw new Error("Residual prepared phase allowed resend");

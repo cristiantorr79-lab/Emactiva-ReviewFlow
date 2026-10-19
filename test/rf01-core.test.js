@@ -213,6 +213,41 @@ test("denied, missing or uncertain schedule makes zero sends for request, remind
   }
 });
 
+test("due request and reminder stay pending outside schedule and send once at the next allowed cycle", async () => {
+  const requestOutside = await run({
+    now: "2026-10-01T12:00:00Z",
+    options: { scheduleStatus: "denied" },
+  });
+  assert.equal(requestOutside.calls.some(c => c[0] === "send"), false);
+  assert.equal(requestOutside.services[0].status, "pending");
+  assert.equal(requestOutside.services[0].request_sent, false);
+
+  const requestAllowed = await run({
+    now: "2026-10-01T13:00:00Z",
+    services: requestOutside.services,
+  });
+  assert.equal(requestAllowed.results.effects.filter(effect => effect.operation === "request").length, 1);
+  assert.equal(requestAllowed.services[0].request_sent, true);
+
+  const reminder = sentService({ request_sent_at: "2026-10-01T12:00:00Z" });
+  const reminderOutside = await run({
+    now: "2026-10-02T00:00:00Z",
+    services: [reminder],
+    options: { scheduleStatus: "denied", reread: { status: "confirmed", service: reminder, events: [] } },
+  });
+  assert.equal(reminderOutside.calls.some(c => c[0] === "send"), false);
+  assert.equal(reminderOutside.services[0].status, "request_sent");
+  assert.equal(reminderOutside.services[0].reminder_sent, false);
+
+  const reminderAllowed = await run({
+    now: "2026-10-02T01:00:00Z",
+    services: reminderOutside.services,
+    options: { reread: { status: "confirmed", service: reminderOutside.services[0], events: [] } },
+  });
+  assert.equal(reminderAllowed.results.effects.filter(effect => effect.operation === "reminder").length, 1);
+  assert.equal(reminderAllowed.services[0].reminder_sent, true);
+});
+
 test("advancing operation clock uses acceptance time and does not anticipate reminder from cycle start", async () => {
   const out = await run({
     now: "2026-10-01T12:00:00Z",
